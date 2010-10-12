@@ -33,6 +33,7 @@ import org.eclipse.ui.IStorageEditorInput;
 import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.texteditor.IDocumentProvider;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IErlElement;
@@ -303,7 +304,7 @@ public class ErlModelUtils {
             }
         }
         if (pd != null) {
-            final IEditorPart editor = EditorUtility.openInEditor(pd
+            final IEditorPart editor = ErlModelUtils.openInEditor(pd
                     .getModule());
             EditorUtility.revealInEditor(editor, pd);
             return true;
@@ -377,7 +378,7 @@ public class ErlModelUtils {
                 checkAllProjects);
         if (r != null && r instanceof IFile) {
             final IFile f = (IFile) r;
-            final IEditorPart editor = EditorUtility.openInEditor(f);
+            final IEditorPart editor = ErlModelUtils.openInEditor(f);
             return openFunctionInEditor(function, editor);
         }
         return false;
@@ -406,14 +407,14 @@ public class ErlModelUtils {
 
     public static void openElement(final IErlElement element)
             throws PartInitException, ErlModelException {
-        final IEditorPart editor = EditorUtility.openInEditor(element);
+        final IEditorPart editor = ErlModelUtils.openInEditor(element);
         EditorUtility.revealInEditor(editor, element);
     }
 
     public static void openSourceRange(final IErlModule module,
             final ISourceRange sourceRange) throws PartInitException,
             ErlModelException {
-        final IEditorPart editor = EditorUtility.openInEditor(module);
+        final IEditorPart editor = ErlModelUtils.openInEditor(module);
         EditorUtility.revealInEditor(editor, sourceRange);
     }
 
@@ -442,7 +443,7 @@ public class ErlModelUtils {
                 checkAllProjects);
         if (r != null && r instanceof IFile) {
             final IFile f = (IFile) r;
-            final IEditorPart editor = EditorUtility.openInEditor(f);
+            final IEditorPart editor = ErlModelUtils.openInEditor(f);
             return openTypeInEditor(type, editor);
         }
         return false;
@@ -627,6 +628,18 @@ public class ErlModelUtils {
         return element != null
                 && (element.getKind() == IErlElement.Kind.TYPESPEC || element
                         .getKind() == IErlElement.Kind.RECORD_DEF);
+    }
+
+    /**
+     * Opens an Erlang editor for an element such as <code>IErlElement</code>,
+     * <code>IFile</code>, or <code>IStorage</code>. The editor is activated by
+     * default.
+     * 
+     * @return the IEditorPart or null if wrong element type or opening failed
+     */
+    public static ITextEditor openInEditor(final Object inputElement)
+            throws ErlModelException, PartInitException {
+        return EditorUtility.openInEditor(inputElement, true);
     }
 
 }

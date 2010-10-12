@@ -84,15 +84,9 @@ public class ErlangLaunchConfigurationDelegate implements
             final Map<String, String> env) throws CoreException {
         final ErlLaunchData data = new ErlLaunchData(config, internal);
 
-        final Set<IProject> projects = new HashSet<IProject>();
-        for (final String s : data.projectNames) {
-            final IProject project = ResourcesPlugin.getWorkspace().getRoot()
-                    .getProject(s);
-            if (project == null) {
-                ErlLogger.error("Launch: project not found: '%s'!", s);
-                return null;
-            }
-            projects.add(project);
+        final Set<IProject> projects = getLaunchProjects(data);
+        if (projects == null) {
+            return null;
         }
         data.interpretedModules = addBreakpointProjectsAndModules(projects,
                 data.interpretedModules);
@@ -109,6 +103,69 @@ public class ErlangLaunchConfigurationDelegate implements
         }
         final RuntimeInfo rt = buildRuntimeInfo(internal, data, rt0);
 
+        final EnumSet<BackendOptions> options = getBackendOptions(mode, data);
+
+        // important, so that we don't get the "normal" console for the erlide
+        // backend
+        final String captureOutput = System.getProperty(
+                "erlide.console.stdout", "false");
+        launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, captureOutput);
+
+        if (data.isInternal) {
+            ErlLogger.debug("Not creating a backend");
+            return null;
+        }
+
+        final ErlideBackend backend = createBackend(mode, launch, env, data,
+                projects, rt, options);
+        if (backend == null) {
+            return null;
+        }
+        postLaunch(mode, data, projects, backend);
+        return backend;
+    }
+
+    private Set<IProject> getLaunchProjects(final ErlLaunchData data) {
+        final Set<IProject> projects = new HashSet<IProject>();
+        for (final String s : data.projectNames) {
+            final IProject project = ResourcesPlugin.getWorkspace().getRoot()
+                    .getProject(s);
+            if (project == null) {
+                ErlLogger.error("Launch: project not found: '%s'!", s);
+                return null;
+            }
+            projects.add(project);
+        }
+        return projects;
+    }
+
+    private ErlideBackend createBackend(final String mode,
+            final ILaunch launch, final Map<String, String> env,
+            final ErlLaunchData data, final Set<IProject> projects,
+            final RuntimeInfo rt, final EnumSet<BackendOptions> options)
+            throws DebugException {
+        ErlideBackend backend = null;
+        try {
+            backend = ErlangCore.getBackendManager().createBackend(rt, options,
+                    launch, env);
+            if (backend == null) {
+                ErlLogger.error("Launch: could not create backend!");
+                final Status s = new Status(IStatus.ERROR,
+                        ErlangPlugin.PLUGIN_ID, DebugException.REQUEST_FAILED,
+                        "Couldn't find the node " + data.nodeName, null);
+                throw new DebugException(s);
+            }
+        } catch (final BackendException e) {
+            ErlLogger.error("Launch: backend error!");
+            final Status s = new Status(IStatus.ERROR, ErlangPlugin.PLUGIN_ID,
+                    DebugException.REQUEST_FAILED, e.getMessage(), null);
+            throw new DebugException(s);
+        }
+        return backend;
+    }
+
+    private EnumSet<BackendOptions> getBackendOptions(final String mode,
+            final ErlLaunchData data) throws CoreException {
         final EnumSet<BackendOptions> options = EnumSet
                 .noneOf(BackendOptions.class);
         if (mode.equals(ILaunchManager.DEBUG_MODE)) {
@@ -131,37 +188,7 @@ public class ErlangLaunchConfigurationDelegate implements
         if (data.loadAllNodes) {
             options.add(BackendOptions.LOAD_ALL_NODES);
         }
-
-        // important, so that we don't get the "normal" console for the erlide
-        // backend
-        final String captureOutput = System.getProperty(
-                "erlide.console.stdout", "false");
-        launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, captureOutput);
-
-        if (data.isInternal) {
-            ErlLogger.debug("Not creating a backend");
-            return null;
-        }
-
-        ErlideBackend backend = null;
-        try {
-            backend = ErlangCore.getBackendManager().createBackend(rt, options,
-                    launch, env);
-            if (backend == null) {
-                ErlLogger.error("Launch: could not create backend!");
-                final Status s = new Status(IStatus.ERROR,
-                        ErlangPlugin.PLUGIN_ID, DebugException.REQUEST_FAILED,
-                        "Couldn't find the node " + data.nodeName, null);
-                throw new DebugException(s);
-            }
-            postLaunch(mode, data, projects, rt, options, backend);
-        } catch (final BackendException e) {
-            ErlLogger.error("Launch: backend error!");
-            final Status s = new Status(IStatus.ERROR, ErlangPlugin.PLUGIN_ID,
-                    DebugException.REQUEST_FAILED, e.getMessage(), null);
-            throw new DebugException(s);
-        }
-        return backend;
+        return options;
     }
 
     private RuntimeInfo buildRuntimeInfo(final boolean internal,
@@ -191,8 +218,7 @@ public class ErlangLaunchConfigurationDelegate implements
     }
 
     protected void postLaunch(final String mode, final ErlLaunchData data,
-            final Set<IProject> projects, final RuntimeInfo rt,
-            final EnumSet<BackendOptions> options, final ErlideBackend backend)
+            final Set<IProject> projects, final ErlideBackend backend)
             throws DebugException {
 
         registerProjectsWithExecutionBackend(backend, projects);
@@ -237,13 +263,20 @@ public class ErlangLaunchConfigurationDelegate implements
             for (int i = 1, n = nodes.arity(); i < n; ++i) {
                 final OtpErlangAtom o = (OtpErlangAtom) nodes.elementAt(i);
                 final OtpErlangAtom a = o;
-                final ErlangDebugNode edn = new ErlangDebugNode(target, a
-                        .atomValue());
+                final ErlangDebugNode edn = new ErlangDebugNode(target,
+                        a.atomValue());
                 launch.addDebugTarget(edn);
             }
         }
     }
 
+    /**
+     * When we run in erlang debugger, we wait and run the initial after the
+     * debugger is started. This is done with an IDebugEventSetListener
+     * 
+     * @param data
+     * @param backend
+     */
     private void registerDebugEventListener(final ErlLaunchData data,
             final ErlideBackend backend) {
         DebugPlugin.getDefault().addDebugEventListener(
@@ -351,8 +384,8 @@ public class ErlangLaunchConfigurationDelegate implements
                             final String m = path.removeFileExtension()
                                     .lastSegment();
                             try {
-                                return ErlideUtil.getBeamBinary(m, b
-                                        .getEntry(s));
+                                return ErlideUtil.getBeamBinary(m,
+                                        b.getEntry(s));
                             } catch (final Exception ex) {
                                 ErlLogger.warn(ex);
                             }
@@ -364,7 +397,7 @@ public class ErlangLaunchConfigurationDelegate implements
         return null;
     }
 
-    void runInitial(final String module, final String function,
+    protected void runInitial(final String module, final String function,
             final String args, final Backend backend) {
         try {
             if (module.length() > 0 && function.length() > 0) {

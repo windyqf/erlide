@@ -550,7 +550,8 @@ public class ErlModel extends Openable implements IErlModel {
 
     public final void accept(final IErlElement element,
             final IErlElementVisitor visitor, final int flags,
-            final IErlElement.Kind leafKind) throws ErlModelException {
+            final IErlElement.Kind leafKind, final boolean open)
+            throws ErlModelException {
         if (element.getKind() == leafKind) {
             visitor.visit(element);
         } else {
@@ -558,10 +559,16 @@ public class ErlModel extends Openable implements IErlModel {
             if ((flags & IErlElement.VISIT_LEAFS_ONLY) == 0) {
                 visitChildren = visitor.visit(element);
             }
+            if (open) {
+                if (element instanceof IOpenable) {
+                    final IOpenable openable = (IOpenable) element;
+                    openable.open(null);
+                }
+            }
             if (visitChildren && element instanceof IParent) {
                 final IParent parent = (IParent) element;
                 for (final IErlElement child : parent.getChildren()) {
-                    accept(child, visitor, flags, leafKind);
+                    accept(child, visitor, flags, leafKind, open);
                 }
                 if (parent instanceof IErlProject) {
                     final IErlProject project = (IErlProject) parent;
@@ -575,7 +582,7 @@ public class ErlModel extends Openable implements IErlModel {
                                     final IErlProject ep = (IErlProject) e;
                                     accept(ep, visitor, flags
                                             & ~IErlElement.VISIT_REFERENCED,
-                                            leafKind);
+                                            leafKind, open);
                                 }
                             }
                         } catch (final CoreException e) {

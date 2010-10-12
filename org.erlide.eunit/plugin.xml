@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            category="org.erlide.views"
+            class="org.erlide.ui.eunit.internal.ui.TestRunnerViewPart"
+            fastViewWidthRatio="0.40"
+            id="org.eclipse.eunit.ResultView"
+            name="EUnit">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.erlide.ui.perspectives.ErlangPerspective">
+         <view
+               id="org.eclipse.eunit.ResultView"
+               relationship="stack"
+               relative="org.erlide.ui.views.navigator.view"
+               visible="false">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            default="false"
+            id="org.eclipse.eunit.EUnitResultEditor"
+            launcher="org.erlide.ui.eunit.internal.ui.EUnitViewEditorLauncher"
+            name="EUnit view">
+         <contentTypeBinding
+               contentTypeId="org.erlide.eunit.contentTypeBinding1">
+         </contentTypeBinding>
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.core.contenttype.contentTypes">
+      <content-type
+            base-type="org.eclipse.core.runtime.xml"
+            file-extensions="xml"
+            id="org.erlide.eunit.EUnitResult"
+            name="EUnit Test Result"
+            priority="high">
+         <describer
+               class="org.eclipse.core.runtime.content.XMLRootElementContentDescriber2">
+         </describer>
+      </content-type>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationDelegate"
+            delegateDescription="This Launcher supports running EUnit tests"
+            delegateName="EUnit Launcher"
+            id="org.erlide.eunit.launchConfigurationType"
+            modes="run, debug"
+            name="EUnit">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            configTypeID="org.erlide.eunit.launchConfigurationType"
+            icon="icons/full/obj16/eulaunch.png"
+            id="org.erlide.eunit.launchimage">
+      </launchConfigurationTypeImage>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="org.erlide.ui.eunit.internal.ui.EUnitLaunchConfigurationTabGroup"
+            id="org.erlide.eunit.launchConfigurationTabGroup.eunit"
+            type="org.erlide.eunit.launchConfigurationType">
+      </launchConfigurationTabGroup>
+   </extension>
+
+</plugin>

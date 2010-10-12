@@ -736,8 +736,9 @@ public abstract class ErlElement extends PlatformObject implements IErlElement,
     }
 
     public final void accept(final IErlElementVisitor visitor, final int flags,
-            final IErlElement.Kind leafKind) throws ErlModelException {
-        getModel().accept(this, visitor, flags, leafKind);
+            final IErlElement.Kind leafKind, final boolean open)
+            throws ErlModelException {
+        getModel().accept(this, visitor, flags, leafKind, open);
     }
 
     /**

@@ -234,8 +234,8 @@ public interface IErlElement extends IAdaptable {
      * @param leafKind
      * @throws ErlModelException
      */
-    void accept(IErlElementVisitor visitor, int flags, IErlElement.Kind leafKind)
-            throws ErlModelException;
+    void accept(IErlElementVisitor visitor, int flags,
+            IErlElement.Kind leafKind, boolean open) throws ErlModelException;
 
     String toLabelString();
 

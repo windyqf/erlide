@@ -41,10 +41,10 @@ import org.erlide.runtime.debug.ErlangDebugTarget;
 import org.erlide.runtime.debug.IErlangDebugNode;
 import org.erlide.runtime.launch.ErlLaunchAttributes;
 import org.erlide.runtime.launch.ErlangDebugHelper;
-import org.erlide.ui.editors.util.EditorUtility;
 import org.erlide.ui.launch.DebugTab;
 import org.erlide.ui.launch.DebugTab.DebugTreeItem;
 import org.erlide.ui.launch.DebugTab.TreeContentProvider;
+import org.erlide.ui.util.ErlModelUtils;
 
 /**
  * A view with a checkbox tree of interpreted modules checking/unchecking
@@ -212,7 +212,7 @@ public class InterpretedModulesView extends AbstractDebugView implements
                 if (o instanceof DebugTab.DebugTreeItem) {
                     final DebugTab.DebugTreeItem item = (DebugTab.DebugTreeItem) o;
                     try {
-                        EditorUtility.openInEditor(item.getItem());
+                        ErlModelUtils.openInEditor(item.getItem());
                     } catch (final PartInitException e) {
                     } catch (final ErlModelException e) {
                     }

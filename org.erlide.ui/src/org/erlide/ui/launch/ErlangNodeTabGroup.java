@@ -10,9 +10,6 @@
  *******************************************************************************/
 package org.erlide.ui.launch;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTabGroup;
@@ -21,27 +18,28 @@ import org.eclipse.debug.ui.EnvironmentTab;
 import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 
+import com.google.common.collect.Lists;
+
 public class ErlangNodeTabGroup extends AbstractLaunchConfigurationTabGroup {
 
-	public Collection<ILaunchConfigurationTab> createMyTabs(
-			final ILaunchConfigurationDialog dialog, final String mode) {
-		ILaunchConfigurationTab[] tabs;
-		if (mode.equals("debug")) {
-			tabs = new ILaunchConfigurationTab[] { new ErlangMainTab(),
-					new RuntimeTab(), new DebugTab(), new CodepathTab() };
-		} else {
-			tabs = new ILaunchConfigurationTab[] { new ErlangMainTab(),
-					new RuntimeTab(), new CodepathTab() };
-		}
-		return Arrays.asList(tabs);
-	}
+    public List<ILaunchConfigurationTab> createMyTabs(
+            final ILaunchConfigurationDialog dialog, final String mode) {
+        final List<ILaunchConfigurationTab> tabs = Lists.newArrayList();
+        tabs.add(new ErlangMainTab());
+        tabs.add(new RuntimeTab());
+        if (mode.equals("debug")) {
+            tabs.add(new DebugTab());
+        }
+        tabs.add(new CodepathTab());
+        return tabs;
+    }
 
-	public void createTabs(final ILaunchConfigurationDialog dialog,
-			final String mode) {
-		final List<ILaunchConfigurationTab> tabs = new ArrayList<ILaunchConfigurationTab>(
-				createMyTabs(dialog, mode));
-		tabs.addAll(Arrays.asList(new ILaunchConfigurationTab[] {
-				new EnvironmentTab(), new CommonTab() }));
-		setTabs(tabs.toArray(new ILaunchConfigurationTab[0]));
-	}
+    public void createTabs(final ILaunchConfigurationDialog dialog,
+            final String mode) {
+        final List<ILaunchConfigurationTab> tabs = Lists
+                .newArrayList(createMyTabs(dialog, mode));
+        tabs.add(new EnvironmentTab());
+        tabs.add(new CommonTab());
+        setTabs(tabs.toArray(new ILaunchConfigurationTab[0]));
+    }
 }

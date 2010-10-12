@@ -80,7 +80,7 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
     /**
      * @param comp
      */
-    private void createProjectsGroup(final Composite comp) {
+    protected void createProjectsGroup(final Composite comp) {
         final Group projectsGroup = SWTUtil.createGroup(comp, "Projects", 2,
                 GridData.FILL_HORIZONTAL);
         projectsTable = CheckboxTableViewer.newCheckList(projectsGroup,
@@ -105,7 +105,7 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
     /**
      * @param comp
      */
-    private void createStartGroup(final Composite comp) {
+    protected void createStartGroup(final Composite comp) {
         final Group startGroup = new Group(comp, SWT.NONE);
         startGroup.setText("Start");
         final GridData gd_startGroup = new GridData(SWT.FILL, SWT.CENTER,
@@ -132,8 +132,9 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
                 .setText("The arguments will be sent as one single argument, a string.");
     }
 
-    private Text textWithLabel(final Group startGroup, final String labelText,
-            final int textWidthHint, final ModifyListener modifyListener) {
+    protected Text textWithLabel(final Group startGroup,
+            final String labelText, final int textWidthHint,
+            final ModifyListener modifyListener) {
         final Label label = new Label(startGroup, SWT.NONE);
         label.setLayoutData(new GridData());
         label.setText(labelText);
@@ -228,6 +229,36 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
     }
 
     public void initializeFrom(final ILaunchConfiguration config) {
+        initializeProjects(config);
+        initializeStart(config);
+        updateLaunchConfigurationDialog();
+    }
+
+    protected void initializeStart(final ILaunchConfiguration config) {
+        try {
+            final String attribute = config.getAttribute(
+                    ErlLaunchAttributes.MODULE, "");
+            moduleText.setText(attribute);
+        } catch (final CoreException e) {
+            moduleText.setText("");
+        }
+        try {
+            final String attribute = config.getAttribute(
+                    ErlLaunchAttributes.FUNCTION, "");
+            funcText.setText(attribute);
+        } catch (final CoreException e) {
+            funcText.setText("");
+        }
+        try {
+            final String attribute = config.getAttribute(
+                    ErlLaunchAttributes.ARGUMENTS, "");
+            argsText.setText(attribute);
+        } catch (final CoreException e) {
+            argsText.setText("");
+        }
+    }
+
+    protected void initializeProjects(final ILaunchConfiguration config) {
         projectsTable.setInput(config);
         String projs;
         try {
@@ -250,33 +281,20 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
         if (itemCount == 1) {
             projectsTable.setChecked(projectsTable.getTable().getItem(0), true);
         }
-
-        try {
-            final String attribute = config.getAttribute(
-                    ErlLaunchAttributes.MODULE, "");
-            moduleText.setText(attribute);
-        } catch (final CoreException e) {
-            moduleText.setText("");
-        }
-        try {
-            final String attribute = config.getAttribute(
-                    ErlLaunchAttributes.FUNCTION, "");
-            funcText.setText(attribute);
-        } catch (final CoreException e) {
-            funcText.setText("");
-        }
-        try {
-            final String attribute = config.getAttribute(
-                    ErlLaunchAttributes.ARGUMENTS, "");
-            argsText.setText(attribute);
-        } catch (final CoreException e) {
-            argsText.setText("");
-        }
-
-        updateLaunchConfigurationDialog();
     }
 
     public void performApply(final ILaunchConfigurationWorkingCopy config) {
+        applyProjects(config);
+        applyStart(config);
+    }
+
+    protected void applyStart(final ILaunchConfigurationWorkingCopy config) {
+        config.setAttribute(ErlLaunchAttributes.MODULE, moduleText.getText());
+        config.setAttribute(ErlLaunchAttributes.FUNCTION, funcText.getText());
+        config.setAttribute(ErlLaunchAttributes.ARGUMENTS, argsText.getText());
+    }
+
+    protected void applyProjects(final ILaunchConfigurationWorkingCopy config) {
         final List<IProject> projects = getSelectedProjects();
         final StringBuilder projectNames = new StringBuilder();
         for (final IProject p : projects) {
@@ -287,10 +305,6 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
         }
         config.setAttribute(ErlLaunchAttributes.PROJECTS,
                 projectNames.toString());
-
-        config.setAttribute(ErlLaunchAttributes.MODULE, moduleText.getText());
-        config.setAttribute(ErlLaunchAttributes.FUNCTION, funcText.getText());
-        config.setAttribute(ErlLaunchAttributes.ARGUMENTS, argsText.getText());
     }
 
     public List<IProject> getSelectedProjects() {
@@ -316,7 +330,7 @@ public class ErlangMainTab extends AbstractLaunchConfigurationTab {
         return true;
     }
 
-    private final ModifyListener fBasicModifyListener = new ModifyListener() {
+    protected final ModifyListener fBasicModifyListener = new ModifyListener() {
         @SuppressWarnings("synthetic-access")
         public void modifyText(final ModifyEvent evt) {
             updateLaunchConfigurationDialog();

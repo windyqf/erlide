@@ -97,23 +97,11 @@ public class EditorUtility {
     }
 
     /**
-     * Opens an Erlang editor for an element such as <code>IErlElement</code>,
-     * <code>IFile</code>, or <code>IStorage</code>. The editor is activated by
-     * default.
-     * 
-     * @return the IEditorPart or null if wrong element type or opening failed
-     */
-    public static IEditorPart openInEditor(final Object inputElement)
-            throws ErlModelException, PartInitException {
-        return openInEditor(inputElement, true);
-    }
-
-    /**
      * Opens an Erlang editor for an element (IErlElement, IFile, IStorage...)
      * 
      * @return the IEditorPart or null if wrong element type or opening failed
      */
-    public static IEditorPart openInEditor(final Object inputElement,
+    public static ITextEditor openInEditor(final Object inputElement,
             final boolean activate) throws ErlModelException, PartInitException {
 
         if (inputElement instanceof IFile) {
@@ -230,20 +218,22 @@ public class EditorUtility {
         }
     }
 
-    private static IEditorPart openInEditor(final IFile file,
+    private static ITextEditor openInEditor(final IFile file,
             final boolean activate) throws PartInitException {
         if (file != null) {
             final IWorkbenchPage p = ErlideUIPlugin.getActivePage();
             if (p != null) {
                 final IEditorPart editorPart = IDE
                         .openEditor(p, file, activate);
-                return editorPart;
+                if (editorPart instanceof ITextEditor) {
+                    return (ITextEditor) editorPart;
+                }
             }
         }
         return null;
     }
 
-    private static IEditorPart openInEditor(final IEditorInput input,
+    private static ITextEditor openInEditor(final IEditorInput input,
             final String editorID, final boolean activate)
             throws PartInitException {
         if (input != null) {
@@ -251,7 +241,9 @@ public class EditorUtility {
             if (p != null) {
                 final IEditorPart editorPart = p.openEditor(input, editorID,
                         activate);
-                return editorPart;
+                if (editorPart instanceof ITextEditor) {
+                    return (ITextEditor) editorPart;
+                }
             }
         }
         return null;
