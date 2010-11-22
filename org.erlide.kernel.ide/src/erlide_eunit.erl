@@ -18,10 +18,12 @@
 %%
 
 find_tests(Beams) ->
-    lists:flatten([get_exported_tests(Beam) || Beam <- Beams]).
+    R = lists:flatten([get_exported_tests(Beam) || Beam <- Beams]),
+    {ok, R}.
 
 run_tests(Tests, JPid) ->
-    eunit:test(Tests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]).
+    eunit:test(Tests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]),
+    erlang:halt().
 
 %%
 %% Local Functions

@@ -15,16 +15,10 @@
 %%
 %% $Id: $
 %%
-%% @author Mickaël Rémond <mremond@process-one.net>
-%% @copyright 2009 Mickaël Rémond, Paul Guyot
+%% @author Jakob C
 %% @see eunit
-%% @doc Surefire reports for EUnit (Format used by Maven and Atlassian
-%% Bamboo for example to integrate test results). Based on initial code
-%% from Paul Guyot.
-%%
-%% Example: Generate XML result file in the current directory:
-%% ```eunit:test([fib, eunit_examples],
-%%               [{report,{eunit_surefire,[{dir,"."}]}}]).'''
+%% @doc EUnit listener for ErlIDE
+%% Based on initial code from Mickaël Rémond and Paul Guyot.
 
 -module(erlide_eunit_listener).
 
@@ -80,12 +74,10 @@ init(Options) ->
     end.
 
 terminate({ok, _Data}, St) ->
-    TestSuite = St#state.testsuite,
-    reply(St, {terminated, TestSuite}),
+    reply(St, terminated, []),
     ok;
 terminate({error, Reason}, St) ->
-    TestSuite = St#state.testsuite,
-    reply(St, {terminated, TestSuite, Reason}),
+    reply(St, terminated, Reason),
     sync_end(error).
 
 sync_end(Result) ->
@@ -95,8 +87,8 @@ sync_end(Result) ->
             ok
     end.
 
-reply(#state{jpid=JPid}, Reply) ->
-    JPid ! Reply.
+reply(#state{jpid=JPid}, What, Argument) ->
+    JPid ! {What, JPid, Argument}.
 
 handle_begin(group, Data, St) ->
     NewId = proplists:get_value(id, Data),
@@ -107,7 +99,7 @@ handle_begin(group, Data, St) ->
             Desc = proplists:get_value(desc, Data),
             TestSuite = St#state.testsuite,
             NewTestSuite = TestSuite#testsuite{name = Desc},
-            reply(St, {group_begin, NewTestSuite}),
+            reply(St, group_begin, NewTestSuite),
             St#state{testsuite=NewTestSuite};
         %% FIXME subgroups
         _ ->
@@ -118,7 +110,7 @@ handle_begin(test, Data, St) ->
                        proplists:get_value(line, Data)),
     Desc = format_desc(proplists:get_value(desc, Data)),
     TestCase = #testcase{name = Name, description = Desc},
-    reply(St, {test_begin, TestCase}),
+    reply(St, test_begin, TestCase),
     St.
 
 handle_end(group, Data, St) ->
@@ -133,7 +125,7 @@ handle_end(group, Data, St) ->
             Time = proplists:get_value(time, Data),
             Output = proplists:get_value(output, Data),
             NewTestSuite = TestSuite#testsuite{ time = Time, output = Output },
-            reply(St, {group_end, NewTestSuite}),
+            reply(St, group_end, NewTestSuite),
             St#state{testsuite=NewTestSuite}
     end;
 handle_end(test, Data, St) ->
@@ -149,15 +141,13 @@ handle_end(test, Data, St) ->
     Output = proplists:get_value(output, Data),
     TestCase = #testcase{name = Name, description = Desc, result = Result,
                          time = Time, output = Output},
-    reply(St, {test_end, TestCase}),
+    reply(St, test_end, TestCase),
     NewTestSuite = add_testcase_to_testsuite(Result, TestCase, TestSuite),
     St#state{testsuite=NewTestSuite}.
 
-%% Cancel group does not give information on the individual cancelled test case
-%% We ignore this event
 handle_cancel(group, _Data, St) ->
     TestSuite = St#state.testsuite,
-    reply(St, {group_cancel, TestSuite}),
+    reply(St, group_cancel, TestSuite),
     St;
 handle_cancel(test, Data, St) ->
     %% Retrieve existing test suite:
@@ -172,7 +162,7 @@ handle_cancel(test, Data, St) ->
       name = Name, description = Desc,
       result = {skipped, Reason}, time = 0,
       output = <<>>},
-    reply(St, {case_cancel, TestCase}),
+    reply(St, test_cancel, TestCase),
     NewTestSuite = TestSuite#testsuite{
                      skipped = TestSuite#testsuite.skipped+1,
                      testcases=[TestCase|TestSuite#testsuite.testcases] },

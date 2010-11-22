@@ -358,8 +358,9 @@ public class EUnitLaunchConfigurationDelegate extends
 	protected void postLaunch(final String mode, final ErlLaunchData data,
 			final Set<IProject> projects, final ErlideBackend backend)
 			throws DebugException {
+		backend.getEventDaemon().addHandler(
+				new EUnitEventHandler(backend.getEventPid()));
 		super.postLaunch(mode, data, projects, backend);
-		backend.getEventDaemon().addHandler(new EUnitEventHandler());
 	}
 
 	@Override

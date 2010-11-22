@@ -33,6 +33,7 @@ public final class ErlideEUnit {
 				final OtpErlangTuple mfaT = (OtpErlangTuple) i;
 				result.add(new ErlangFunctionCall(mfaT));
 			}
+			return result;
 		}
 		return null;
 	}
