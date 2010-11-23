@@ -76,4 +76,141 @@
       </launchConfigurationTabGroup>
    </extension>
 
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+         name="Referring Tests"
+         description="Referring Tests"
+         categoryId="org.eclipse.search.ui.category.search"
+         id="org.erlide.eunit.gotoTest">
+      </command>
+      <command
+            name="Run EUnit Test"
+            description="Run EUnit Test"
+            categoryId="org.eclipse.debug.ui.category.run"
+            id="org.erlide.eunit.junitShortcut.run">
+      </command>
+      <command
+            name="Debug EUnit Test"
+            description="Debug EUnit Test"
+            categoryId="org.eclipse.debug.ui.category.run"
+            id="org.erlide.eunit.junitShortcut.debug">
+      </command>
+      <command
+            name="Rerun EUnit Test"
+            description="Rerun EUnit Test"
+            categoryId="org.eclipse.debug.ui.category.run"
+            id="org.erlide.eunit.eunitShortcut.rerunLast">
+      </command>
+      <command
+            name="Rerun EUnit Test - Failures First"
+            description="Rerun EUnit Test - Failures First"
+            categoryId="org.eclipse.debug.ui.category.run"
+            id="org.erlide.eunit.eunitShortcut.rerunFailedFirst">
+      </command>       
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            label="EUnit"
+            visible="false"
+            id="org.eerlide.eunit.EUnitActionSet">
+         <menu
+               label=" Se&amp;arch"
+               path="navigate"
+               id="org.eclipse.search.menu">
+                                <groupMarker name="internalDialogGroup"/>   <!-- not to be used by clients  -->
+                                <groupMarker name="dialogGroup"/>           <!-- to be used by clients      -->
+                                <separator name="fileSearchContextMenuActionsGroup"/> <!-- to be used by clients      -->
+                        <separator name="contextMenuActionsGroup"/> <!-- to be used by clients -->
+                        <separator name="occurencesActionsGroup"/> <!-- to be used by clients -->
+                        <separator name="extraSearchGroup"/> <!-- to be used by clients -->
+         </menu>
+                <action
+               definitionId="org.erlide.eunit.gotoTest"
+               label="Referring &amp;Tests..."
+               helpContextId="org.eclipse.jdt.junit.goto_referenced_test_action_context"
+               class="org.erlide.ui.eunit.internal.ui.GotoReferencedTestAction"
+               tooltip="%GotoTestAction.tooltip"
+               menubarPath="org.eclipse.search.menu/extraSearchGroup"
+               id="eunit.actions.GotoTestAction">
+         </action>
+      </actionSet>
+   </extension>
+      <extension
+         point="org.eclipse.ui.actionSetPartAssociations">
+      <actionSetPartAssociation
+            targetID="org.eclipse.jdt.junit.JUnitActionSet">
+         <part
+               id="org.eclipse.jdt.ui.PackageExplorer">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.TypeHierarchy">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.CompilationUnitEditor">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.ClassFileEditor">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.ProjectsView">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.PackagesView">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.TypesView">
+         </part>
+         <part
+               id="org.eclipse.jdt.ui.MembersView">
+         </part>
+         <part
+               id="org.eclipse.search.SearchResultView">
+         </part>
+      </actionSetPartAssociation>
+      <actionSetPartAssociation
+            targetID="org.eclipse.jdt.ui.JavaActionSet">
+         <part
+               id="org.eclipse.jdt.junit.ResultView">
+         </part>
+      </actionSetPartAssociation>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+            label="%JUnitShortcut.label"
+            icon="$nl$/icons/full/obj16/julaunch.gif"
+            helpContextId="org.eclipse.jdt.junit.launch_shortcut"
+            class="org.eclipse.jdt.junit.launcher.JUnitLaunchShortcut"
+            modes="run, debug"
+            id="org.eclipse.jdt.junit.junitShortcut">
+         <contextualLaunch>
+            <enablement>
+               <with variable="selection">
+                  <count value="1"/>
+                  <iterate>
+                     <adapt type="org.eclipse.jdt.core.IJavaElement">
+                                <test property="org.eclipse.jdt.core.isInJavaProject"/>
+                                <test property="org.eclipse.jdt.core.hasTypeOnClasspath" value="junit.framework.Test"/>
+                                <test property="org.eclipse.jdt.junit.canLaunchAsJUnit" forcePluginActivation="true"/>
+                             </adapt>
+                          </iterate>
+               </with>
+            </enablement>
+         </contextualLaunch>
+         <configurationType
+               id="org.eclipse.jdt.junit.launchconfig">
+         </configurationType>
+         <description
+               description="%DebugJUnitLaunchShortcut.description"
+               mode="debug">
+         </description>
+         <description
+               description="%RunJUnitLaunchShortcut.description"
+               mode="run">
+         </description>
+      </shortcut>
+   </extension>
 </plugin>

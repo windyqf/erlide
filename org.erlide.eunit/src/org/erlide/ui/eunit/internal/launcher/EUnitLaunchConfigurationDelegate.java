@@ -223,7 +223,7 @@ public class EUnitLaunchConfigurationDelegate extends
 	 * @throws CoreException
 	 *             an exception is thrown when the search for tests failed
 	 */
-	protected List<ErlangFunctionCall> evaluateTests(
+	protected static List<ErlangFunctionCall> evaluateTests(
 			final ILaunchConfiguration configuration,
 			final IProgressMonitor monitor) throws CoreException {
 		List<IErlProject> erlProjects = getErlProjects(configuration);
@@ -241,12 +241,12 @@ public class EUnitLaunchConfigurationDelegate extends
 		if (testFunctions.isEmpty()) {
 			final String msg = MessageFormat.format(
 					"No tests found with test runner ''{0}''.", "EUnit");
-			abort(msg, null, DebugException.REQUEST_FAILED);// FIXME byt code
+			abort(msg, null, DebugException.REQUEST_FAILED);// FIXME JC byt code
 		}
 		return testFunctions;
 	}
 
-	private List<ErlangFunctionCall> filterTestFunction(
+	private static List<ErlangFunctionCall> filterTestFunction(
 			final String testFunctionName,
 			final List<ErlangFunctionCall> testFunctions) {
 		if (testFunctionName.length() == 0) {
@@ -261,7 +261,7 @@ public class EUnitLaunchConfigurationDelegate extends
 		return result;
 	}
 
-	private List<ErlangFunctionCall> getTestFunctions(
+	private static List<ErlangFunctionCall> getTestFunctions(
 			final IProgressMonitor monitor, final List<IErlProject> erlProjects)
 			throws CoreException {
 		final IErlangTestFinder finder = new EUnitTestFinder();
@@ -274,7 +274,7 @@ public class EUnitLaunchConfigurationDelegate extends
 		return testFunctions;
 	}
 
-	private List<ErlangFunctionCall> filterTestModule(
+	private static List<ErlangFunctionCall> filterTestModule(
 			final String testModuleName,
 			final List<ErlangFunctionCall> testFunctions) {
 		if (testModuleName.length() == 0) {
@@ -289,8 +289,8 @@ public class EUnitLaunchConfigurationDelegate extends
 		return result;
 	}
 
-	private List<IErlProject> filterTestProjects(final String testProjectName,
-			final List<IErlProject> erlProjects) {
+	private static List<IErlProject> filterTestProjects(
+			final String testProjectName, final List<IErlProject> erlProjects) {
 		if (testProjectName.length() > 0) {
 			for (final IErlProject project : erlProjects) {
 				if (project.getName().equals(testProjectName)) {
@@ -337,8 +337,8 @@ public class EUnitLaunchConfigurationDelegate extends
 	 * org.eclipse.jdt.internal.junit.launcher.ITestFindingAbortHandler#abort
 	 * (java.lang.String, java.lang.Throwable, int)
 	 */
-	protected void abort(final String message, final Throwable exception,
-			final int code) throws CoreException {
+	protected static void abort(final String message,
+			final Throwable exception, final int code) throws CoreException {
 		throw new CoreException(new Status(IStatus.ERROR,
 				EUnitPlugin.PLUGIN_ID, code, message, exception));
 	}
@@ -348,13 +348,15 @@ public class EUnitLaunchConfigurationDelegate extends
 		try {
 			final String projectNames = configuration.getAttribute(
 					ErlLaunchAttributes.PROJECTS, (String) null);
-			final String[] names = projectNames.split(";");
-			final List<IErlProject> result = new ArrayList<IErlProject>(
-					names.length);
-			for (final String name : names) {
-				result.add(ErlangCore.getModel().getErlangProject(name));
+			if (projectNames != null) {
+				final String[] names = projectNames.split(";");
+				final List<IErlProject> result = new ArrayList<IErlProject>(
+						names.length);
+				for (final String name : names) {
+					result.add(ErlangCore.getModel().getErlangProject(name));
+				}
+				return result;
 			}
-			return result;
 		} catch (final CoreException e) {
 		}
 		return null;
@@ -365,6 +367,7 @@ public class EUnitLaunchConfigurationDelegate extends
 	protected void postLaunch(final String mode, final ErlLaunchData data,
 			final Set<IProject> projects, final ErlideBackend backend,
 			final ILaunch launch) throws DebugException {
+
 		backend.getEventDaemon().addHandler(
 				new EUnitEventHandler(backend.getEventPid(), launch, backend));
 		super.postLaunch(mode, data, projects, backend, launch);

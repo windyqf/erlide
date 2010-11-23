@@ -240,7 +240,6 @@ public class ErlangLaunchConfigurationDelegate implements
             interpretModules(data, backend, distributed);
             registerDebugEventListener(data, backend);
             target.sendStarted();
-
         } else {
             runInitial(data.module, data.function, data.args, backend);
         }

@@ -46,16 +46,22 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.PartInitException;
 import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.eunit.EUnitPlugin;
 import org.erlide.eunit.EUnitPreferencesConstants;
-import org.erlide.eunit.TestRunListener;
 import org.erlide.jinterface.util.ErlLogger;
+import org.erlide.ui.ErlideUIPlugin;
 import org.erlide.ui.eunit.internal.launcher.EUnitEventHandler;
 import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationConstants;
 import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationDelegate;
+import org.erlide.ui.eunit.internal.ui.TestRunnerViewPart;
 import org.erlide.ui.eunit.model.ITestRunSession;
+import org.erlide.ui.util.SWTUtil;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -127,22 +133,20 @@ public final class EUnitModel {
 				fTrackedLaunches.remove(launch);
 				final IErlProject project = ErlangCore.getModel()
 						.getErlangProject(testProjectName);
-				connectTestRunner(launch, project, testProjectName);
+				SWTUtil.getStandardDisplay().syncExec(new Runnable() {
+					public void run() {
+						connectTestRunner(launch, project, testProjectName);
+					}
+				});
 			}
 		}
 
 		private void connectTestRunner(final ILaunch launch,
 				final IErlProject erlProject, final String name) {
+			showTestRunnerViewPartInActivePage(findTestRunnerViewPartInActivePage());
 			final TestRunSession testRunSession = new TestRunSession(launch,
 					name, erlProject);
 			addTestRunSession(testRunSession);
-
-			final Object[] listeners = EUnitPlugin.getDefault()
-					.getTestRunListeners().getListeners();
-			for (int i = 0; i < listeners.length; i++) {
-				((TestRunListener) listeners[i])
-						.sessionLaunched(testRunSession);
-			}
 		}
 	}
 
@@ -189,6 +193,47 @@ public final class EUnitModel {
 		// }
 		// }
 
+	}
+
+	public TestRunnerViewPart showTestRunnerViewPartInActivePage(
+			final TestRunnerViewPart testRunnerViewPart) {
+		IWorkbenchPart activePart = null;
+		IWorkbenchPage page = null;
+		try {
+			// TODO: have to force the creation of view part contents
+			// otherwise the UI will not be updated
+			if (testRunnerViewPart != null && testRunnerViewPart.isCreated()) {
+				return testRunnerViewPart;
+			}
+			page = ErlideUIPlugin.getActivePage();
+			if (page == null) {
+				return null;
+			}
+			activePart = page.getActivePart();
+			// show the result view if it isn't shown yet
+			return (TestRunnerViewPart) page
+					.showView(TestRunnerViewPart.VIEW_ID);
+		} catch (final PartInitException e) {
+			ErlLogger.error(e);
+			return null;
+		} finally {
+			// restore focus stolen by the creation of the result view
+			if (page != null && activePart != null) {
+				page.activate(activePart);
+			}
+		}
+	}
+
+	public TestRunnerViewPart findTestRunnerViewPartInActivePage() {
+		final IWorkbenchPage page = ErlideUIPlugin.getActivePage();
+		if (page == null) {
+			return null;
+		}
+		final IViewPart view = page.findView(TestRunnerViewPart.VIEW_ID);
+		if (view == null) {
+			return null;
+		}
+		return (TestRunnerViewPart) view;
 	}
 
 	/**
@@ -534,9 +579,16 @@ public final class EUnitModel {
 
 	public void addEventHandler(final EUnitEventHandler eventHandler) {
 		fEventHandlers.add(eventHandler);
+		associateEventHandlerAndTestRunSession(eventHandler);
+	}
+
+	private void associateEventHandlerAndTestRunSession(
+			final EUnitEventHandler eventHandler) {
 		final ITestRunSession testRunSession = getTestRunSessionForLaunch(eventHandler
 				.getLaunch());
-		testRunSession.setEventHandler(eventHandler);
+		if (testRunSession != null) {
+			testRunSession.setEventHandler(eventHandler);
+		}
 	}
 
 	private ITestRunSession getTestRunSessionForLaunch(final ILaunch launch) {

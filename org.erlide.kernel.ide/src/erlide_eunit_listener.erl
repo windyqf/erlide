@@ -110,7 +110,7 @@ handle_begin(test, Data, St) ->
                        proplists:get_value(line, Data)),
     Desc = format_desc(proplists:get_value(desc, Data)),
     TestCase = #testcase{name = Name, description = Desc},
-    reply(St, test_begin, TestCase),
+    reply(St, test_begin, {Name, St#state.testsuite#testsuite.name}),
     St.
 
 handle_end(group, Data, St) ->

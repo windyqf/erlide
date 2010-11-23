@@ -129,8 +129,8 @@ public class TestRunnerViewPart extends ViewPart {
 
 	public static final String VIEW_ID = "org.erlide.eunit.ResultView"; //$NON-NLS-1$
 
-	private static final String RERUN_LAST_COMMAND = "org.eclipse.jdt.junit.junitShortcut.rerunLast"; //$NON-NLS-1$
-	private static final String RERUN_FAILED_FIRST_COMMAND = "org.eclipse.jdt.junit.junitShortcut.rerunFailedFirst"; //$NON-NLS-1$
+	private static final String RERUN_LAST_COMMAND = "org.erlide.eunit.eunitShortcut.rerunLast"; //$NON-NLS-1$
+	private static final String RERUN_FAILED_FIRST_COMMAND = "org.erlide.eunit.eunitShortcut.rerunFailedFirst"; //$NON-NLS-1$
 
 	static final int REFRESH_INTERVAL = 200;
 
@@ -2185,6 +2185,10 @@ public class TestRunnerViewPart extends ViewPart {
 		if (!isDisposed()) {
 			getDisplay().asyncExec(r);
 		}
+	}
+
+	public boolean isCreated() {
+		return fCounterPanel != null;
 	}
 
 	public void rerunTest(final String testId, final String className,

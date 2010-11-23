@@ -150,7 +150,61 @@ public class TestRunSession implements ITestRunSession {
 
 		fSessionListeners = new ListenerList();
 
-		addTestSessionListener(new TestRunListenerAdapter(this));
+		addTestSessionListener(new ITestSessionListener() {
+
+			public void testStarted(final TestCaseElement testCaseElement) {
+			}
+
+			public void testReran(final TestCaseElement testCaseElement,
+					final Status status, final String trace,
+					final String expectedResult, final String actualResult) {
+			}
+
+			public void testFailed(final TestElement testElement,
+					final Status status, final String trace,
+					final String expected, final String actual) {
+			}
+
+			public void testEnded(final TestCaseElement testCaseElement) {
+			}
+
+			public void testAdded(final TestElement testElement) {
+			}
+
+			public void sessionEnded(final long elapsedTime) {
+				swapOut();
+			}
+
+			/*
+			 * (non-Javadoc)
+			 * 
+			 * @see org.eclipse.jdt.internal.junit.model.ITestSessionListener#
+			 * sessionStopped(long)
+			 */
+			public void sessionStopped(final long elapsedTime) {
+				swapOut();
+			}
+
+			/*
+			 * (non-Javadoc)
+			 * 
+			 * @see org.eclipse.jdt.internal.junit.model.ITestSessionListener#
+			 * sessionTerminated()
+			 */
+			public void sessionTerminated() {
+				swapOut();
+			}
+
+			public void runningBegins() {
+			}
+
+			public boolean acceptsSwapToDisk() {
+				return true;
+			}
+
+			public void sessionStarted() {
+			}
+		});
 	}
 
 	void reset() {
@@ -490,21 +544,14 @@ public class TestRunSession implements ITestRunSession {
 	}
 
 	private TestElement addTreeEntry(final String treeEntry) {
-		// format: testId","testName","isSuite","testcount
-		final int index0 = treeEntry.indexOf(',');
-		final String id = treeEntry.substring(0, index0);
+		// format: testSuite
+		// or    : testSuite/testCase
+		final String strings[] = treeEntry.split("/");
+		final boolean isSuite = strings.length==1;
+final mer att final göra här... final eunit skickar inte final suite om man final bara kör ett final enstaka test, så det final måste hanteras
+dessutom final verkar JUnit kräva/vilja ha final antalet tester i final en svit, tror final inte EUnit final har det...
 
-		final StringBuffer testNameBuffer = new StringBuffer(100);
-		final int index1 = scanTestName(treeEntry, index0 + 1, testNameBuffer);
-		final String testName = testNameBuffer.toString().trim();
-
-		final int index2 = treeEntry.indexOf(',', index1 + 1);
-		final boolean isSuite = treeEntry.substring(index1 + 1, index2).equals(
-				"true"); //$NON-NLS-1$
-
-		final int testCount = Integer.parseInt(treeEntry.substring(index2 + 1));
-
-		if (fIncompleteTestSuites.isEmpty()) {
+if (fIncompleteTestSuites.isEmpty()) {
 			return createTestElement(fTestRoot, id, testName, isSuite,
 					testCount);
 		} else {
@@ -757,10 +804,8 @@ public class TestRunSession implements ITestRunSession {
 		/*
 		 * (non-Javadoc)
 		 * 
-		 * @see
-		 * org.eclipse.jdt.internal.junit.model.ITestRunListener2#testReran(
-		 * java.lang.String, java.lang.String, java.lang.String, int,
-		 * java.lang.String, java.lang.String, java.lang.String)
+		 * @see ITestRunListener2#testReran(String, String, String, int, String,
+		 * String, String)
 		 */
 		public void testReran(final String testId, final String className,
 				final String testName, final int statusCode,

@@ -280,6 +280,9 @@ public class EditorUtility {
         if (!(element instanceof IErlModule)) {
             element = element.getParent();
         }
+        if (!(element instanceof IErlModule)) {
+            element = element.getParent();
+        }
         if (element.getFilePath() != null) {
             final IPath path = new Path(element.getFilePath());
             IFileStore fileStore = EFS.getLocalFileSystem().getStore(

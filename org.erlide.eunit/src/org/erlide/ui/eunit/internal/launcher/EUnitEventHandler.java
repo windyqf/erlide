@@ -81,6 +81,7 @@ public class EUnitEventHandler extends EventHandler {
 						final String name = Util.stringValue(argument
 								.elementAt(1));
 						final String id = name; // FIXME
+						listener.testTreeEntry(id);
 						listener.testStarted(id, name);
 					}
 				};
@@ -111,10 +112,12 @@ public class EUnitEventHandler extends EventHandler {
 				al = new AllListeners() {
 
 					public void apply(final ITestRunListener2 listener) {
-						final String name = Util.stringValue(argument
+						final String testName = Util.stringValue(argument
+								.elementAt(0));
+						final String testSuite = Util.stringValue(argument
 								.elementAt(1));
-						final String id = name; // FIXME
-						listener.testStarted(id, name);
+						listener.testTreeEntry(testSuite + "/" + testName);
+						listener.testStarted(testName, testName);
 					}
 				};
 				break;
