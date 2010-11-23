@@ -23,6 +23,7 @@ find_tests(Beams) ->
 
 run_tests(Tests, JPid) ->
     eunit:test(Tests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]),
+    timer:sleep(1000000),
     erlang:halt().
 
 %%

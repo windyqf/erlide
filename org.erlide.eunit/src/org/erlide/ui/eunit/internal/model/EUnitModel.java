@@ -46,6 +46,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchListener;
 import org.eclipse.debug.core.ILaunchManager;
+import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.eunit.EUnitPlugin;
 import org.erlide.eunit.EUnitPreferencesConstants;
@@ -54,6 +55,7 @@ import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.ui.eunit.internal.launcher.EUnitEventHandler;
 import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationConstants;
 import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationDelegate;
+import org.erlide.ui.eunit.model.ITestRunSession;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -121,32 +123,22 @@ public final class EUnitModel {
 			// test whether the launch defines the EUnit attributes
 			final String testProjectName = launch
 					.getAttribute(EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT);
-			if (testProjectName.length() > 0) {
+			if (testProjectName != null && testProjectName.length() > 0) {
 				fTrackedLaunches.remove(launch);
-				connectTestRunner(launch, erlProjects);
-			}
-			final String portStr = launch
-					.getAttribute(EUnitLaunchConfigurationConstants.ATTR_PORT);
-			if (portStr == null) {
-				return;
-			}
-			try {
-				final int port = Integer.parseInt(portStr);
-				fTrackedLaunches.remove(launch);
-				connectTestRunner(launch, javaProject, port);
-			} catch (final NumberFormatException e) {
-				return;
+				final IErlProject project = ErlangCore.getModel()
+						.getErlangProject(testProjectName);
+				connectTestRunner(launch, project, testProjectName);
 			}
 		}
 
 		private void connectTestRunner(final ILaunch launch,
-				final Collection<IErlProject> erlProjects) {
+				final IErlProject erlProject, final String name) {
 			final TestRunSession testRunSession = new TestRunSession(launch,
-					erlProjects, port);
+					name, erlProject);
 			addTestRunSession(testRunSession);
 
-			final Object[] listeners = JUnitCorePlugin.getDefault()
-					.getNewTestRunListeners().getListeners();
+			final Object[] listeners = EUnitPlugin.getDefault()
+					.getTestRunListeners().getListeners();
 			for (int i = 0; i < listeners.length; i++) {
 				((TestRunListener) listeners[i])
 						.sessionLaunched(testRunSession);
@@ -163,7 +155,7 @@ public final class EUnitModel {
 	private final List<EUnitEventHandler> fEventHandlers = Lists.newArrayList();
 
 	/**
-	 * Starts the model (called by the {@link JUnitCorePlugin} on startup).
+	 * Starts the model (called by the {@link EUnitPlugin} on startup).
 	 */
 	public void start() {
 		final ILaunchManager launchManager = DebugPlugin.getDefault()
@@ -542,6 +534,18 @@ public final class EUnitModel {
 
 	public void addEventHandler(final EUnitEventHandler eventHandler) {
 		fEventHandlers.add(eventHandler);
+		final ITestRunSession testRunSession = getTestRunSessionForLaunch(eventHandler
+				.getLaunch());
+		testRunSession.setEventHandler(eventHandler);
+	}
+
+	private ITestRunSession getTestRunSessionForLaunch(final ILaunch launch) {
+		for (final ITestRunSession testRunSession : fTestRunSessions) {
+			if (testRunSession.getLaunch().equals(launch)) {
+				return testRunSession;
+			}
+		}
+		return null;
 	}
 
 	public EUnitEventHandler getEventHandlerForLaunch(final ILaunch launch) {

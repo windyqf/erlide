@@ -22,7 +22,7 @@ public class EUnitViewEditorLauncher implements IEditorLauncher {
 
 	public void open(final IPath file) {
 		try {
-			EUnitPlugin.getActivePage().showView(TestRunnerViewPart.NAME);
+			EUnitPlugin.getActivePage().showView(TestRunnerViewPart.VIEW_ID);
 			EUnitModel.importTestRunSession(file.toFile());
 		} catch (final CoreException e) {
 			ExceptionHandler.handle(e, "Import Test Run",

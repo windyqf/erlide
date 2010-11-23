@@ -36,6 +36,7 @@ import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.util.ErlangFunctionCall;
 import org.erlide.eunit.EUnitPlugin;
 import org.erlide.jinterface.backend.Backend;
+import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.runtime.backend.ErlideBackend;
 import org.erlide.runtime.launch.ErlLaunchAttributes;
 import org.erlide.runtime.launch.ErlLaunchData;
@@ -80,7 +81,11 @@ public class EUnitLaunchConfigurationDelegate extends
 		if (monitor == null) {
 			monitor = new NullProgressMonitor();
 		}
-
+		final String testProjectName = configuration.getAttribute(
+				EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT, "");
+		launch.setAttribute(
+				EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT,
+				testProjectName);
 		monitor.beginTask(
 				MessageFormat.format("{0}...", configuration.getName()), 5); //$NON-NLS-1$
 		// check for cancellation
@@ -115,6 +120,7 @@ public class EUnitLaunchConfigurationDelegate extends
 
 			// get the tests
 			fTestElements = evaluateTests(configuration, monitor);
+			ErlLogger.debug("fTestElements %s", fTestElements);
 
 			// check for cancellation
 			if (monitor.isCanceled()) {
@@ -354,6 +360,7 @@ public class EUnitLaunchConfigurationDelegate extends
 		return null;
 	}
 
+	// FIXME JC is this better done with a backend listener?
 	@Override
 	protected void postLaunch(final String mode, final ErlLaunchData data,
 			final Set<IProject> projects, final ErlideBackend backend,

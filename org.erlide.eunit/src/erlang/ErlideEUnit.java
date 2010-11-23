@@ -41,6 +41,7 @@ public final class ErlideEUnit {
 	public static boolean runTests(final Backend backend,
 			final OtpErlangList tests, final OtpErlangPid jpid) {
 		try {
+			ErlLogger.debug("erlide_eunit:run_tests %s  (jpid %s", tests, jpid);
 			backend.cast("erlide_eunit", "run_tests", "xx", tests, jpid);
 			return true;
 		} catch (final BackendException e) {

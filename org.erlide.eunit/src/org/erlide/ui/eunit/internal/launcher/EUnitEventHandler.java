@@ -9,6 +9,7 @@ import org.erlide.core.util.Tuple;
 import org.erlide.eunit.EUnitPlugin;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.events.EventHandler;
+import org.erlide.jinterface.backend.util.Util;
 import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.ui.eunit.internal.model.ITestRunListener2;
 
@@ -26,6 +27,9 @@ public class EUnitEventHandler extends EventHandler {
 
 	public EUnitEventHandler(final OtpErlangPid eventPid, final ILaunch launch,
 			final Backend backend) {
+		ErlLogger.debug(
+				"adding eventhandler to eventPid %s launch %s backend %s",
+				eventPid, launch, backend);
 		this.eventPid = eventPid;
 		this.launch = launch;
 		this.backend = backend;
@@ -33,7 +37,7 @@ public class EUnitEventHandler extends EventHandler {
 	}
 
 	enum EUnitMsgWhat {
-		test_begin, test_end, test_cancel, group_begin, group_end, group_cancel;
+		test_begin, test_end, test_cancel, group_begin, group_end, group_cancel, terminated;
 
 		static Set<String> allNames() {
 			final EUnitMsgWhat[] values = values();
@@ -74,14 +78,76 @@ public class EUnitEventHandler extends EventHandler {
 				al = new AllListeners() {
 
 					public void apply(final ITestRunListener2 listener) {
-						listener.testStarted("id", "name");
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						listener.testStarted(id, name);
 					}
 				};
+				break;
 			case group_end:
+				al = new AllListeners() {
+
+					public void apply(final ITestRunListener2 listener) {
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						listener.testEnded(id, name);
+					}
+				};
+				break;
 			case group_cancel:
+				al = new AllListeners() {
+
+					public void apply(final ITestRunListener2 listener) {
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						listener.testEnded(id, name);
+					}
+				};
+				break;
 			case test_begin:
+				al = new AllListeners() {
+
+					public void apply(final ITestRunListener2 listener) {
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						listener.testStarted(id, name);
+					}
+				};
+				break;
 			case test_end:
+				al = new AllListeners() {
+					public void apply(final ITestRunListener2 listener) {
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						final OtpErlangObject testResult = argument
+								.elementAt(3);
+						if (Util.isOk(testResult)) {
+							listener.testEnded(id, name);
+						} else {
+							final OtpErlangTuple failureT = (OtpErlangTuple) testResult;
+							listener.testFailed(
+									ITestRunListener2.STATUS_FAILURE, id, name,
+									failureT.elementAt(1).toString(), "true",
+									"false"); // FIXME
+						}
+					}
+				};
+				break;
 			case test_cancel:
+				al = new AllListeners() {
+					public void apply(final ITestRunListener2 listener) {
+						final String name = Util.stringValue(argument
+								.elementAt(1));
+						final String id = name; // FIXME
+						listener.testEnded(id, name);
+					}
+				};
+				break;
 			}
 			if (al != null) {
 				allListeners(al);

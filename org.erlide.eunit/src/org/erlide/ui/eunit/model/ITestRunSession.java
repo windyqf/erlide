@@ -10,7 +10,9 @@
  *******************************************************************************/
 package org.erlide.ui.eunit.model;
 
+import org.eclipse.debug.core.ILaunch;
 import org.erlide.core.erlang.IErlProject;
+import org.erlide.ui.eunit.internal.launcher.EUnitEventHandler;
 
 /**
  * Represents a test run session.
@@ -25,21 +27,25 @@ import org.erlide.core.erlang.IErlProject;
  */
 public interface ITestRunSession extends ITestElementContainer {
 
-    /**
-     * Returns the name of the test run. The name is the name of the launch
-     * configuration use to run this test.
-     * 
-     * @return returns the test run name
-     */
-    public String getTestRunName();
+	/**
+	 * Returns the name of the test run. The name is the name of the launch
+	 * configuration use to run this test.
+	 * 
+	 * @return returns the test run name
+	 */
+	public String getTestRunName();
 
-    /**
-     * Returns the Erlang project from which this test run session has been
-     * launched, or <code>null</code> if not available.
-     * 
-     * @return the launched project, or <code>null</code> is not available.
-     * @since 3.6
-     */
-    public abstract IErlProject getLaunchedProject();
+	/**
+	 * Returns the Erlang project from which this test run session has been
+	 * launched, or <code>null</code> if not available.
+	 * 
+	 * @return the launched project, or <code>null</code> is not available.
+	 * @since 3.6
+	 */
+	public IErlProject getLaunchedProject();
+
+	public ILaunch getLaunch();
+
+	public void setEventHandler(EUnitEventHandler eventHandler);
 
 }

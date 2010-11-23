@@ -58,6 +58,7 @@ public class EUnitPlugin extends AbstractUIPlugin {
 	public void start(final BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		getEUnitModel().start();
 	}
 
 	/*

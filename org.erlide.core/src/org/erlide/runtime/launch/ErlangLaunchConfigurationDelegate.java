@@ -91,9 +91,9 @@ public class ErlangLaunchConfigurationDelegate implements
         data.interpretedModules = addBreakpointProjectsAndModules(projects,
                 data.interpretedModules);
 
-        // if (true || ErlideUtil.isDeveloper()) {
-        data.debugPrint(mode);
-        // }
+        if (ErlideUtil.isDeveloper() && false) { // XXX JC
+            data.debugPrint(mode);
+        }
 
         final RuntimeInfo rt0 = ErlangCore.getRuntimeInfoManager().getRuntime(
                 data.runtime);

@@ -122,7 +122,6 @@ public class TestRunSession implements ITestRunSession {
 	volatile boolean fIsRunning;
 
 	volatile boolean fIsStopped;
-	private final EUnitEventHandler eventHandler;
 
 	/**
 	 * Creates a test run session.
@@ -149,41 +148,7 @@ public class TestRunSession implements ITestRunSession {
 
 		// fTestRunnerClient = null;
 
-		eventHandler = EUnitPlugin.getModel().getEventHandlerForLaunch(launch);
 		fSessionListeners = new ListenerList();
-
-		if (eventHandler == null) {
-			return;
-		}
-		eventHandler.addListener(new TestSessionNotifier());
-
-		final ILaunchManager launchManager = DebugPlugin.getDefault()
-				.getLaunchManager();
-		launchManager.addLaunchListener(new ILaunchesListener2() {
-			public void launchesTerminated(final ILaunch[] launches) {
-				if (Arrays.asList(launches).contains(fLaunch)) {
-					if (eventHandler != null) {
-						eventHandler.shutdown();
-					}
-					launchManager.removeLaunchListener(this);
-				}
-			}
-
-			public void launchesRemoved(final ILaunch[] launches) {
-				if (Arrays.asList(launches).contains(fLaunch)) {
-					if (eventHandler != null) {
-						eventHandler.shutdown();
-					}
-					launchManager.removeLaunchListener(this);
-				}
-			}
-
-			public void launchesChanged(final ILaunch[] launches) {
-			}
-
-			public void launchesAdded(final ILaunch[] launches) {
-			}
-		});
 
 		addTestSessionListener(new TestRunListenerAdapter(this));
 	}
@@ -912,5 +877,38 @@ public class TestRunSession implements ITestRunSession {
 	public String toString() {
 		return fTestRunName
 				+ " " + DateFormat.getDateTimeInstance().format(new Date(fStartTime)); //$NON-NLS-1$
+	}
+
+	public void setEventHandler(final EUnitEventHandler eventHandler) {
+		eventHandler.addListener(new TestSessionNotifier());
+
+		final ILaunchManager launchManager = DebugPlugin.getDefault()
+				.getLaunchManager();
+		launchManager.addLaunchListener(new ILaunchesListener2() {
+			public void launchesTerminated(final ILaunch[] launches) {
+				if (Arrays.asList(launches).contains(fLaunch)) {
+					if (eventHandler != null) {
+						eventHandler.shutdown();
+					}
+					launchManager.removeLaunchListener(this);
+				}
+			}
+
+			public void launchesRemoved(final ILaunch[] launches) {
+				if (Arrays.asList(launches).contains(fLaunch)) {
+					if (eventHandler != null) {
+						eventHandler.shutdown();
+					}
+					launchManager.removeLaunchListener(this);
+				}
+			}
+
+			public void launchesChanged(final ILaunch[] launches) {
+			}
+
+			public void launchesAdded(final ILaunch[] launches) {
+			}
+		});
+
 	}
 }

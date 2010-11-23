@@ -127,7 +127,7 @@ import org.erlide.ui.eunit.ui.ProgressImages;
  */
 public class TestRunnerViewPart extends ViewPart {
 
-	public static final String NAME = "org.eclipse.jdt.junit.ResultView"; //$NON-NLS-1$
+	public static final String VIEW_ID = "org.erlide.eunit.ResultView"; //$NON-NLS-1$
 
 	private static final String RERUN_LAST_COMMAND = "org.eclipse.jdt.junit.junitShortcut.rerunLast"; //$NON-NLS-1$
 	private static final String RERUN_FAILED_FIRST_COMMAND = "org.eclipse.jdt.junit.junitShortcut.rerunFailedFirst"; //$NON-NLS-1$
@@ -1748,11 +1748,11 @@ public class TestRunnerViewPart extends ViewPart {
 		if (page != null) {
 			try { // show the result view
 				testRunner = (TestRunnerViewPart) page
-						.findView(TestRunnerViewPart.NAME);
+						.findView(TestRunnerViewPart.VIEW_ID);
 				if (testRunner == null) {
 					final IWorkbenchPart activePart = page.getActivePart();
 					testRunner = (TestRunnerViewPart) page.showView(
-							TestRunnerViewPart.NAME, null,
+							TestRunnerViewPart.VIEW_ID, null,
 							IWorkbenchPage.VIEW_VISIBLE);
 					// restore focus
 					page.activate(activePart);

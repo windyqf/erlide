@@ -7,7 +7,7 @@
             category="org.erlide.views"
             class="org.erlide.ui.eunit.internal.ui.TestRunnerViewPart"
             fastViewWidthRatio="0.40"
-            id="org.eclipse.eunit.ResultView"
+            id="org.erlide.eunit.ResultView"
             name="EUnit">
       </view>
    </extension>
@@ -16,7 +16,7 @@
       <perspectiveExtension
             targetID="org.erlide.ui.perspectives.ErlangPerspective">
          <view
-               id="org.eclipse.eunit.ResultView"
+               id="org.erlide.eunit.ResultView"
                relationship="stack"
                relative="org.erlide.ui.views.navigator.view"
                visible="false">
@@ -27,7 +27,7 @@
          point="org.eclipse.ui.editors">
       <editor
             default="false"
-            id="org.eclipse.eunit.EUnitResultEditor"
+            id="org.erlide.eunit.ResultView"
             launcher="org.erlide.ui.eunit.internal.ui.EUnitViewEditorLauncher"
             name="EUnit view">
          <contentTypeBinding

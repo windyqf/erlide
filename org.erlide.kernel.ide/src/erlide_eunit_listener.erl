@@ -74,10 +74,10 @@ init(Options) ->
     end.
 
 terminate({ok, _Data}, St) ->
-    reply(St, terminated, []),
+    reply(St, terminated, {}),
     ok;
 terminate({error, Reason}, St) ->
-    reply(St, terminated, Reason),
+    reply(St, terminated, {Reason}),
     sync_end(error).
 
 sync_end(Result) ->
