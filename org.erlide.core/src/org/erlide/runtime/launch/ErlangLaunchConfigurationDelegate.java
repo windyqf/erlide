@@ -121,7 +121,7 @@ public class ErlangLaunchConfigurationDelegate implements
         if (backend == null) {
             return null;
         }
-        postLaunch(mode, data, projects, backend);
+        postLaunch(mode, data, projects, backend, launch);
         return backend;
     }
 
@@ -218,15 +218,14 @@ public class ErlangLaunchConfigurationDelegate implements
     }
 
     protected void postLaunch(final String mode, final ErlLaunchData data,
-            final Set<IProject> projects, final ErlideBackend backend)
-            throws DebugException {
+            final Set<IProject> projects, final ErlideBackend backend,
+            final ILaunch launch) throws DebugException {
 
         registerProjectsWithExecutionBackend(backend, projects);
         if (!backend.isDistributed()) {
             return;
         }
         if (mode.equals(ILaunchManager.DEBUG_MODE)) {
-            final ILaunch launch = backend.getLaunch();
             // add debug target
             target = new ErlangDebugTarget(launch, backend, projects,
                     data.debugFlags);

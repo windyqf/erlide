@@ -49,10 +49,15 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.eunit.EUnitPlugin;
 import org.erlide.eunit.EUnitPreferencesConstants;
+import org.erlide.eunit.TestRunListener;
 import org.erlide.jinterface.util.ErlLogger;
+import org.erlide.ui.eunit.internal.launcher.EUnitEventHandler;
+import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationConstants;
 import org.erlide.ui.eunit.internal.launcher.EUnitLaunchConfigurationDelegate;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import com.google.common.collect.Lists;
 
 /**
  * Central registry for EUnit test runs.
@@ -101,7 +106,8 @@ public final class EUnitModel {
 				return;
 			}
 
-			final ILaunchConfiguration configuration = launch.getLaunchConfiguration();
+			final ILaunchConfiguration configuration = launch
+					.getLaunchConfiguration();
 			if (configuration == null) {
 				return;
 			}
@@ -112,34 +118,40 @@ public final class EUnitModel {
 				return;
 			}
 
-			// // test whether the launch defines the JUnit attributes
-			// final String portStr = launch
-			// .getAttribute(EUnitLaunchConfigurationConstants.ATTR_PORT);
-			// if (portStr == null) {
-			// return;
-			// }
-			// try {
-			// final int port = Integer.parseInt(portStr);
-			// fTrackedLaunches.remove(launch);
-			// connectTestRunner(launch, javaProject, port);
-			// } catch (final NumberFormatException e) {
-			// return;
-			// }
+			// test whether the launch defines the EUnit attributes
+			final String testProjectName = launch
+					.getAttribute(EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT);
+			if (testProjectName.length() > 0) {
+				fTrackedLaunches.remove(launch);
+				connectTestRunner(launch, erlProjects);
+			}
+			final String portStr = launch
+					.getAttribute(EUnitLaunchConfigurationConstants.ATTR_PORT);
+			if (portStr == null) {
+				return;
+			}
+			try {
+				final int port = Integer.parseInt(portStr);
+				fTrackedLaunches.remove(launch);
+				connectTestRunner(launch, javaProject, port);
+			} catch (final NumberFormatException e) {
+				return;
+			}
 		}
 
-		// private void connectTestRunner(final ILaunch launch,
-		// final Collection<IErlProject> erlProjects, final int port) {
-		// final TestRunSession testRunSession = new TestRunSession(launch,
-		// erlProjects, port);
-		// addTestRunSession(testRunSession);
-		//
-		// final Object[] listeners = JUnitCorePlugin.getDefault()
-		// .getNewTestRunListeners().getListeners();
-		// for (int i = 0; i < listeners.length; i++) {
-		// ((TestRunListener) listeners[i])
-		// .sessionLaunched(testRunSession);
-		// }
-		// }
+		private void connectTestRunner(final ILaunch launch,
+				final Collection<IErlProject> erlProjects) {
+			final TestRunSession testRunSession = new TestRunSession(launch,
+					erlProjects, port);
+			addTestRunSession(testRunSession);
+
+			final Object[] listeners = JUnitCorePlugin.getDefault()
+					.getNewTestRunListeners().getListeners();
+			for (int i = 0; i < listeners.length; i++) {
+				((TestRunListener) listeners[i])
+						.sessionLaunched(testRunSession);
+			}
+		}
 	}
 
 	private final ListenerList fTestRunSessionListeners = new ListenerList();
@@ -148,6 +160,7 @@ public final class EUnitModel {
 	 */
 	private final LinkedList<TestRunSession> fTestRunSessions = new LinkedList<TestRunSession>();
 	private final ILaunchListener fLaunchListener = new EUnitLaunchListener();
+	private final List<EUnitEventHandler> fEventHandlers = Lists.newArrayList();
 
 	/**
 	 * Starts the model (called by the {@link JUnitCorePlugin} on startup).
@@ -525,6 +538,19 @@ public final class EUnitModel {
 			((ITestRunSessionListener) listeners[i])
 					.sessionAdded(testRunSession);
 		}
+	}
+
+	public void addEventHandler(final EUnitEventHandler eventHandler) {
+		fEventHandlers.add(eventHandler);
+	}
+
+	public EUnitEventHandler getEventHandlerForLaunch(final ILaunch launch) {
+		for (final EUnitEventHandler eventHandler : fEventHandlers) {
+			if (eventHandler.getLaunch().equals(launch)) {
+				return eventHandler;
+			}
+		}
+		return null;
 	}
 
 }

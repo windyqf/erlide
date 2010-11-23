@@ -356,11 +356,11 @@ public class EUnitLaunchConfigurationDelegate extends
 
 	@Override
 	protected void postLaunch(final String mode, final ErlLaunchData data,
-			final Set<IProject> projects, final ErlideBackend backend)
-			throws DebugException {
+			final Set<IProject> projects, final ErlideBackend backend,
+			final ILaunch launch) throws DebugException {
 		backend.getEventDaemon().addHandler(
-				new EUnitEventHandler(backend.getEventPid()));
-		super.postLaunch(mode, data, projects, backend);
+				new EUnitEventHandler(backend.getEventPid(), launch, backend));
+		super.postLaunch(mode, data, projects, backend, launch);
 	}
 
 	@Override

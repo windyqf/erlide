@@ -83,7 +83,7 @@ public class TestRunHandler extends DefaultHandler {
 						erlProject = null;
 					}
 				}
-				fTestRunSession = new TestRunSession(name, erlProject);
+				fTestRunSession = new TestRunSession(null, name, erlProject);
 				// TODO: read counts?
 
 			} else {
@@ -100,7 +100,7 @@ public class TestRunHandler extends DefaultHandler {
 
 			if (fTestRunSession == null) {
 				// support standalone suites and Ant's 'junitreport' task:
-				fTestRunSession = new TestRunSession(name, null);
+				fTestRunSession = new TestRunSession(null, name, null);
 				fTestSuite = fTestRunSession.getTestRoot();
 			}
 
