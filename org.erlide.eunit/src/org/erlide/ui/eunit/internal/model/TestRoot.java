@@ -14,20 +14,20 @@ import org.erlide.ui.eunit.model.ITestRunSession;
 
 public class TestRoot extends TestSuiteElement {
 
-    private final ITestRunSession fSession;
+	private final ITestRunSession fSession;
 
-    public TestRoot(final ITestRunSession session) {
-        super(null, "-1", session.getTestRunName(), 1); //$NON-NLS-1$
-        fSession = session;
-    }
+	public TestRoot(final ITestRunSession session) {
+		super(null, "-1", session.getTestRunName()); //$NON-NLS-1$
+		fSession = session;
+	}
 
-    @Override
-    public TestRoot getRoot() {
-        return this;
-    }
+	@Override
+	public TestRoot getRoot() {
+		return this;
+	}
 
-    @Override
-    public ITestRunSession getTestRunSession() {
-        return fSession;
-    }
+	@Override
+	public ITestRunSession getTestRunSession() {
+		return fSession;
+	}
 }

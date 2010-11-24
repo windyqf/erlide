@@ -36,7 +36,7 @@ public class EUnitEventHandler extends EventHandler {
 		EUnitPlugin.getModel().addEventHandler(this);
 	}
 
-	enum EUnitMsgWhat {
+	private enum EUnitMsgWhat {
 		test_begin, test_end, test_cancel, group_begin, group_end, group_cancel, terminated;
 
 		static Set<String> allNames() {
@@ -114,9 +114,7 @@ public class EUnitEventHandler extends EventHandler {
 					public void apply(final ITestRunListener2 listener) {
 						final String testName = Util.stringValue(argument
 								.elementAt(0));
-						final String testSuite = Util.stringValue(argument
-								.elementAt(1));
-						listener.testTreeEntry(testSuite + "/" + testName);
+						listener.testTreeEntry(testName);
 						listener.testStarted(testName, testName);
 					}
 				};

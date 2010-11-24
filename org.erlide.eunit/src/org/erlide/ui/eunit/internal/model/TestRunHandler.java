@@ -107,7 +107,7 @@ public class TestRunHandler extends DefaultHandler {
 			final String pack = attributes.getValue(IXMLTags.ATTR_PACKAGE);
 			final String suiteName = pack == null ? name : pack + "." + name; //$NON-NLS-1$
 			fTestSuite = (TestSuiteElement) fTestRunSession.createTestElement(
-					fTestSuite, getNextId(), suiteName, true, 0);
+					fTestSuite, getNextId(), suiteName, true);
 			readTime(fTestSuite, attributes);
 			fNotRun.push(Boolean.valueOf(attributes
 					.getValue(IXMLTags.ATTR_INCOMPLETE)));
@@ -122,7 +122,7 @@ public class TestRunHandler extends DefaultHandler {
 					.getValue(IXMLTags.ATTR_MODULENAME);
 			fTestCase = (TestCaseElement) fTestRunSession.createTestElement(
 					fTestSuite, getNextId(), name + '(' + classname + ')',
-					false, 0);
+					false);
 			fNotRun.push(Boolean.valueOf(attributes
 					.getValue(IXMLTags.ATTR_INCOMPLETE)));
 			fTestCase.setIgnored(Boolean.valueOf(

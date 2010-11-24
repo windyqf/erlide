@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
@@ -84,7 +83,7 @@ public class TestRunSession implements ITestRunSession {
 	/**
 	 * The TestSuites for which additional children are expected.
 	 */
-	private List<IncompleteTestSuite> fIncompleteTestSuites;
+	// private List<IncompleteTestSuite> fIncompleteTestSuites;
 
 	/**
 	 * Suite for unrooted test case elements, or <code>null</code>.
@@ -377,7 +376,7 @@ public class TestRunSession implements ITestRunSession {
 			fTestRoot = null;
 			// fTestRunnerClient = null;
 			fIdToTest = new HashMap<String, TestElement>();
-			fIncompleteTestSuites = null;
+			// fIncompleteTestSuites = null;
 			fUnrootedSuite = null;
 
 		} catch (final IllegalStateException e) {
@@ -544,79 +543,35 @@ public class TestRunSession implements ITestRunSession {
 	}
 
 	private TestElement addTreeEntry(final String treeEntry) {
-		// format: testSuite
-		// or    : testSuite/testCase
-		final String strings[] = treeEntry.split("/");
-		final boolean isSuite = strings.length==1;
-final mer att final göra här... final eunit skickar inte final suite om man final bara kör ett final enstaka test, så det final måste hanteras
-dessutom final verkar JUnit kräva/vilja ha final antalet tester i final en svit, tror final inte EUnit final har det...
-
-if (fIncompleteTestSuites.isEmpty()) {
-			return createTestElement(fTestRoot, id, testName, isSuite,
-					testCount);
-		} else {
-			final int suiteIndex = fIncompleteTestSuites.size() - 1;
-			final IncompleteTestSuite openSuite = fIncompleteTestSuites
-					.get(suiteIndex);
-			openSuite.fOutstandingChildren--;
-			if (openSuite.fOutstandingChildren <= 0) {
-				fIncompleteTestSuites.remove(suiteIndex);
-			}
-			return createTestElement(openSuite.fTestSuiteElement, id, testName,
-					isSuite, testCount);
+		// format: testSuite (module)
+		// or : testCase (module:func...)
+		final String strings[] = treeEntry.split(":");
+		final boolean isSuite = strings.length == 1;
+		final String suiteName = strings[0], suiteId = suiteName;
+		TestSuiteElement suite = (TestSuiteElement) fIdToTest.get(suiteName);
+		if (suite == null) {
+			suite = (TestSuiteElement) createTestElement(fTestRoot, suiteId,
+					suiteName, true);
 		}
+		if (!isSuite) {
+			final String testName = treeEntry, testId = testName;
+			return createTestElement(suite, testId, testName, false);
+		}
+		return suite;
 	}
 
 	public TestElement createTestElement(final TestSuiteElement parent,
-			final String id, final String testName, final boolean isSuite,
-			final int testCount) {
+			final String testId, final String testName, final boolean isSuite) {
 		TestElement testElement;
 		if (isSuite) {
 			final TestSuiteElement testSuiteElement = new TestSuiteElement(
-					parent, id, testName, testCount);
+					parent, testId, testName);
 			testElement = testSuiteElement;
-			if (testCount > 0) {
-				fIncompleteTestSuites.add(new IncompleteTestSuite(
-						testSuiteElement, testCount));
-			}
 		} else {
-			testElement = new TestCaseElement(parent, id, testName);
+			testElement = new TestCaseElement(parent, testName, testName);
 		}
-		fIdToTest.put(id, testElement);
+		fIdToTest.put(testName, testElement);
 		return testElement;
-	}
-
-	/**
-	 * Append the test name from <code>s</code> to <code>testName</code>.
-	 * 
-	 * @param s
-	 *            the string to scan
-	 * @param start
-	 *            the offset of the first character in <code>s</code>
-	 * @param testName
-	 *            the result
-	 * 
-	 * @return the index of the next ','
-	 */
-	private int scanTestName(final String s, final int start,
-			final StringBuffer testName) {
-		boolean inQuote = false;
-		int i = start;
-		for (; i < s.length(); i++) {
-			final char c = s.charAt(i);
-			if (c == '\\' && !inQuote) {
-				inQuote = true;
-				continue;
-			} else if (inQuote) {
-				inQuote = false;
-				testName.append(c);
-			} else if (c == ',') {
-				break;
-			} else {
-				testName.append(c);
-			}
-		}
-		return i;
 	}
 
 	/**
@@ -627,8 +582,6 @@ if (fIncompleteTestSuites.isEmpty()) {
 	private class TestSessionNotifier implements ITestRunListener2 {
 
 		public void testRunStarted(final int testCount) {
-			fIncompleteTestSuites = new ArrayList<TestRunSession.IncompleteTestSuite>();
-
 			fStartedCount = 0;
 			fIgnoredCount = 0;
 			fFailureCount = 0;
@@ -694,7 +647,7 @@ if (fIncompleteTestSuites.isEmpty()) {
 				final String testName) {
 			final TestSuiteElement unrootedSuite = getUnrootedSuite();
 			final TestElement testElement = createTestElement(unrootedSuite,
-					testId, testName, false, 1);
+					testId, testName, false);
 
 			final Object[] listeners = fSessionListeners.getListeners();
 			for (int i = 0; i < listeners.length; ++i) {
@@ -707,7 +660,7 @@ if (fIncompleteTestSuites.isEmpty()) {
 		private TestSuiteElement getUnrootedSuite() {
 			if (fUnrootedSuite == null) {
 				fUnrootedSuite = (TestSuiteElement) createTestElement(
-						fTestRoot, "-2", "Unrooted Tests", true, 0); //$NON-NLS-1$
+						fTestRoot, "-2", "Unrooted Tests", true); //$NON-NLS-1$
 			}
 			return fUnrootedSuite;
 		}
@@ -723,7 +676,7 @@ if (fIncompleteTestSuites.isEmpty()) {
 			if (testElement == null) {
 				testElement = createUnrootedTestElement(testId, testName);
 			} else if (!(testElement instanceof TestCaseElement)) {
-				logUnexpectedTest(testId, testElement);
+				logUnexpectedTest(testName, testElement);
 				return;
 			}
 			final TestCaseElement testCaseElement = (TestCaseElement) testElement;
@@ -838,17 +791,6 @@ if (fIncompleteTestSuites.isEmpty()) {
 			ErlLogger
 					.error(new Exception(
 							"Unexpected TestElement type for testId '" + testId + "': " + testElement)); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-	}
-
-	private static class IncompleteTestSuite {
-		public TestSuiteElement fTestSuiteElement;
-		public int fOutstandingChildren;
-
-		public IncompleteTestSuite(final TestSuiteElement testSuiteElement,
-				final int outstandingChildren) {
-			fTestSuiteElement = testSuiteElement;
-			fOutstandingChildren = outstandingChildren;
 		}
 	}
 

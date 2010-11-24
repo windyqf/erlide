@@ -11,11 +11,12 @@
 
 package org.erlide.ui.eunit.internal.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.erlide.ui.eunit.model.ITestElement;
 import org.erlide.ui.eunit.model.ITestSuiteElement;
+
+import com.google.common.collect.Lists;
 
 public class TestSuiteElement extends TestElement implements ITestSuiteElement {
 
@@ -23,9 +24,9 @@ public class TestSuiteElement extends TestElement implements ITestSuiteElement {
 	private Status fChildrenStatus;
 
 	public TestSuiteElement(final TestSuiteElement parent, final String id,
-			final String testName, final int childrenCount) {
+			final String testName) {
 		super(parent, id, testName);
-		fChildren = new ArrayList<TestElement>(childrenCount);
+		fChildren = Lists.newArrayList();
 	}
 
 	/*
