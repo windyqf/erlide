@@ -41,6 +41,8 @@ import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IOldErlangProjectProperties;
 import org.erlide.core.erlang.util.BackendUtils;
 import org.erlide.core.erlang.util.ErlideUtil;
+import org.erlide.core.util.MessageReporter;
+import org.erlide.core.util.MessageReporter.ReporterPosition;
 import org.erlide.core.util.Tuple;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.BackendException;
@@ -116,6 +118,7 @@ public final class BackendManager extends OtpNodeStatus implements
         final String nodeName = info.getNodeName();
         final boolean exists = EpmdWatcher.findRunningNode(nodeName);
         ErlideBackend b = null;
+
         final boolean isRemoteNode = nodeName.contains("@");
         boolean watch = true;
         if (exists || isRemoteNode) {
@@ -273,8 +276,10 @@ public final class BackendManager extends OtpNodeStatus implements
                     try {
                         createIdeBackend();
                     } catch (final BackendException e) {
-                        ErlLogger.error("Could not start IDE backend: "
-                                + e.getMessage());
+                        final String msg = "Could not start IDE backend: "
+                                + e.getMessage();
+                        MessageReporter.show(msg, ReporterPosition.MODAL);
+                        ErlLogger.error(msg);
                     }
                 }
             }
@@ -306,8 +311,10 @@ public final class BackendManager extends OtpNodeStatus implements
             }
             ideBackend = createInternalBackend(info, options, null);
         } else {
-            ErlLogger.error("There is no erlideRuntime defined! "
-                    + "Could not start IDE backend.");
+            final String msg = "There is no erlideRuntime defined! "
+                    + "Could not start IDE backend.";
+            MessageReporter.show(msg, ReporterPosition.MODAL);
+            ErlLogger.error(msg);
         }
     }
 

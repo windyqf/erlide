@@ -44,6 +44,7 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.IErlElement;
+import org.erlide.core.erlang.IErlExternal;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.ISourceRange;
 import org.erlide.jinterface.util.ErlLogger;
@@ -159,6 +160,7 @@ public class EditorUtility {
         }
 
         // Support for non-text editor - try IGotoMarker interface
+        // FIXME is this ever used, ever?
         if (editor instanceof IGotoMarker) {
             final IEditorInput input = editor.getEditorInput();
             if (input instanceof IFileEditorInput) {
@@ -290,6 +292,11 @@ public class EditorUtility {
             fileStore = fileStore.getChild(path.lastSegment());
             final IFileInfo fetchInfo = fileStore.fetchInfo();
             if (!fetchInfo.isDirectory() && fetchInfo.exists()) {
+                if (element instanceof IErlModule
+                        && element.getParent() instanceof IErlExternal) {
+                    return new ErlangExternalEditorInput(fileStore,
+                            (IErlModule) element);
+                }
                 return new FileStoreEditorInput(fileStore);
             }
         }

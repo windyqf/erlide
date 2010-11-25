@@ -43,8 +43,6 @@ public class CodeManager {
 
     private final List<CodeBundle> registeredBundles;
 
-    private final boolean doLog = false;
-
     // only to be called by ErlideBackend
     public CodeManager(final ErlideBackend b) {
         backend = b;
@@ -72,7 +70,7 @@ public class CodeManager {
     }
 
     public void reRegisterBundles() {
-        for (final CodeBundle p : registeredBundles) {
+        for (CodeBundle p : registeredBundles) {
             registerBundle(p);
         }
     }
@@ -83,7 +81,7 @@ public class CodeManager {
     }
 
     public void unregister(final Bundle b) {
-        final CodeBundle p = findBundle(b);
+        CodeBundle p = findBundle(b);
         if (p == null) {
             return;
         }
@@ -192,17 +190,31 @@ public class CodeManager {
     }
 
     private void registerBundle(final CodeBundle p) {
+        String externalPath = System.getProperty(p.getBundle()
+                .getSymbolicName() + ".ebin");
+        if (externalPath != null) {
+            final boolean accessible = ErlideUtil.isAccessible(backend,
+                    externalPath);
+            if (accessible) {
+                ErlLogger.debug("adding %s to code path for %s:: %s",
+                        externalPath, backend, backend.getInfo());
+                ErlangCode.addPathA(backend, externalPath);
+                return;
+            } else {
+                ErlLogger.info("external code path %s for %s "
+                        + "is not accessible, using plugin code", externalPath,
+                        backend, backend.getInfo());
+            }
+        }
         final Collection<String> ebinDirs = p.getEbinDirs();
         if (ebinDirs != null) {
-            for (final String ebinDir : ebinDirs) {
+            for (String ebinDir : ebinDirs) {
                 final String localDir = ebinDir.replaceAll("\\\\", "/");
                 final boolean accessible = ErlideUtil.isAccessible(backend,
                         localDir);
                 if (accessible) {
-                    if (doLog) {
-                        ErlLogger.debug("adding %s to code path for %s:: %s",
-                                localDir, backend, backend.getInfo());
-                    }
+                    ErlLogger.debug("adding %s to code path for %s:: %s",
+                            localDir, backend, backend.getInfo());
                     ErlangCode.addPathA(backend, localDir);
                 } else {
                     ErlLogger.debug("loading %s for %s", p.getBundle()
@@ -217,8 +229,8 @@ public class CodeManager {
         }
     }
 
-    private CodeBundle findBundle(final Bundle b) {
-        for (final CodeBundle p : registeredBundles) {
+    private CodeBundle findBundle(Bundle b) {
+        for (CodeBundle p : registeredBundles) {
             if (p.getBundle() == b) {
                 return p;
             }
