@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -44,7 +43,6 @@ import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.IErlTypespec;
 import org.erlide.core.erlang.ISourceRange;
 import org.erlide.core.erlang.SourceRange;
-import org.erlide.core.erlang.util.ContainerFilter;
 import org.erlide.core.erlang.util.ErlangFunction;
 import org.erlide.core.erlang.util.ErlangIncludeFile;
 import org.erlide.core.erlang.util.ErlideUtil;
@@ -237,77 +235,6 @@ public class ErlModelUtils {
         return modulesFound;
     }
 
-    public static boolean openPreprocessorDef(final Backend backend,
-            final IProject project, final IErlModule module, final String name,
-            final IErlElement.Kind kind, final String externalIncludes)
-            throws PartInitException, ErlModelException, CoreException,
-            BackendException {
-        return internalOpenPreprocessorDef(backend, project, module, name,
-                kind, externalIncludes, new ArrayList<IErlModule>());
-    }
-
-    /**
-     * @param backend
-     * @param project
-     * @param module
-     * @param definedName
-     * @param type
-     * @param findPreprocessorDef
-     *            TODO
-     * @throws CoreException
-     * @throws ErlModelException
-     * @throws PartInitException
-     * @throws BackendException
-     */
-    private static boolean internalOpenPreprocessorDef(final Backend backend,
-            final IProject project, final IErlModule module,
-            final String definedName, final IErlElement.Kind type,
-            final String externalIncludes, final List<IErlModule> modulesDone)
-            throws CoreException, ErlModelException, PartInitException,
-            BackendException {
-        if (module == null) {
-            return false;
-        }
-        modulesDone.add(module);
-        module.open(null);
-        final IErlPreprocessorDef pd = findPreprocessorDef(backend, project,
-                module, definedName, type, externalIncludes);
-        if (pd == null) {
-            final Collection<ErlangIncludeFile> includes = module
-                    .getIncludedFiles();
-            for (final ErlangIncludeFile element : includes) {
-                final String filenameLastPart = element.getFilenameLastPart();
-                final IResource resource = module.getResource();
-                final IContainer parent = resource.getParent();
-                final ContainerFilter includePathFilter = PluginUtils
-                        .getIncludePathFilter(project, parent);
-                final IResource re = ResourceUtil
-                        .recursiveFindNamedResourceWithReferences(project,
-                                filenameLastPart, includePathFilter);
-                final IErlModule m2;
-                if (re instanceof IFile) {
-                    m2 = ModelUtils.getModule((IFile) re);
-                } else {
-                    m2 = getExternalInclude(backend, project, externalIncludes,
-                            element);
-                }
-                if (m2 != null && !modulesDone.contains(m2)) {
-                    if (internalOpenPreprocessorDef(backend, project, m2,
-                            definedName, type, externalIncludes, modulesDone)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        if (pd != null) {
-            final IEditorPart editor = EditorUtility.openInEditor(pd
-                    .getModule());
-            EditorUtility.revealInEditor(editor, pd);
-            return true;
-        }
-        return false;
-    }
-
     private static IErlModule getExternalInclude(final Backend backend,
             final IProject project, final String externalIncludes,
             final ErlangIncludeFile element) throws BackendException,
@@ -349,35 +276,6 @@ public class ErlModelUtils {
         return definedName;
     }
 
-    /**
-     * Open an editor on the given module and select the given erlang function
-     * 
-     * @param mod
-     *            module name (without .erl)
-     * @param fun
-     *            function name
-     * @param arity
-     *            function arity
-     * @param path
-     *            path to module (including .erl)
-     * @param checkAllProjects
-     *            if true, check all projects in workspace, otherwise only
-     *            consider projects referred from project
-     * @throws CoreException
-     */
-    public static boolean openExternalFunction(final String mod,
-            final ErlangFunction function, final String path,
-            final IErlModule module, final IProject project,
-            final boolean checkAllProjects) throws CoreException {
-        final IErlModule module2 = findExternalModule(mod, path, project,
-                checkAllProjects);
-        if (module2 != null) {
-            final IEditorPart editor = EditorUtility.openInEditor(module2);
-            return openFunctionInEditor(function, editor);
-        }
-        return false;
-    }
-
     public static IErlElement findExternalFunction(String moduleName,
             final ErlangFunction erlangFunction, final String modulePath,
             final IProject project, final boolean checkAllProjects,
@@ -397,16 +295,17 @@ public class ErlModelUtils {
         return null;
     }
 
-    public static void openElement(final IErlElement element)
+    public static IEditorPart openElement(final IErlElement element)
             throws PartInitException, ErlModelException {
-        final IEditorPart editor = EditorUtility.openInEditor(element);
+        final IEditorPart editor = EditorUtility.openInEditor(element, true);
         EditorUtility.revealInEditor(editor, element);
+        return editor;
     }
 
     public static void openSourceRange(final IErlModule module,
             final ISourceRange sourceRange) throws PartInitException,
             ErlModelException {
-        final IEditorPart editor = EditorUtility.openInEditor(module);
+        final IEditorPart editor = EditorUtility.openInEditor(module, true);
         EditorUtility.revealInEditor(editor, sourceRange);
     }
 
@@ -582,9 +481,9 @@ public class ErlModelUtils {
 
     public static void openMFA(final String module, final String function,
             final int arity) throws CoreException {
-        ErlModelUtils.openExternalFunction(module, new ErlangFunction(function,
-                arity), null, ErlangCore.getModel().findModule(module), null,
-                true);
+        final IErlModule module2 = findExternalModule(module, null, null, true);
+        final IEditorPart editor = openElement(module2);
+        openFunctionInEditor(new ErlangFunction(function, arity), editor);
     }
 
     public static void openMF(final String module, final String function)
@@ -596,7 +495,7 @@ public class ErlModelUtils {
         final IErlModule module = findExternalModule(moduleName, null, null,
                 true);
         if (module != null) {
-            EditorUtility.openInEditor(module);
+            openElement(module);
         }
     }
 

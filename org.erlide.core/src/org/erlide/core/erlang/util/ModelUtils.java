@@ -326,7 +326,7 @@ public class ModelUtils {
                     }
                     return isExternal;
                 }
-            }, 0, Kind.MODULE);
+            }, 0, Kind.MODULE, false);
         }
         return result;
     }

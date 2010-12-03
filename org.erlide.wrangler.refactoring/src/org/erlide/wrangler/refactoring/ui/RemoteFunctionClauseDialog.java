@@ -167,7 +167,7 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
 	}
 
 	protected List<IErlFunctionClause> filterClauses(
-			final List<IErlElement> children) {
+			final Collection<IErlElement> children) {
 		ArrayList<IErlFunctionClause> clauses = new ArrayList<IErlFunctionClause>();
 		for (IErlElement e : children) {
 			if (e instanceof IErlFunctionClause)
@@ -177,7 +177,7 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
 	}
 
 	protected List<IErlFunction> filterFunctions(
-			final List<IErlElement> elements) {
+			final Collection<IErlElement> elements) {
 		ArrayList<IErlFunction> functions = new ArrayList<IErlFunction>();
 		for (IErlElement e : elements) {
 			if (e instanceof IErlFunction)

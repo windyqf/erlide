@@ -212,7 +212,7 @@ public class InterpretedModulesView extends AbstractDebugView implements
                 if (o instanceof DebugTab.DebugTreeItem) {
                     final DebugTab.DebugTreeItem item = (DebugTab.DebugTreeItem) o;
                     try {
-                        ErlModelUtils.openInEditor(item.getItem());
+                        ErlModelUtils.openElement(item.getItem());
                     } catch (final PartInitException e) {
                     } catch (final ErlModelException e) {
                     }

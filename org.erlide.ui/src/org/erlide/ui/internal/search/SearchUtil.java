@@ -185,7 +185,7 @@ public class SearchUtil {
                     }
                     return true;
                 }
-            }, 0, Kind.MODULE);
+            }, 0, Kind.MODULE, false);
         }
     }
 

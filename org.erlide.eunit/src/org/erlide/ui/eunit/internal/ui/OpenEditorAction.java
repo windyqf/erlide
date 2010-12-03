@@ -55,7 +55,8 @@ public abstract class OpenEditorAction extends Action {
 			return;
 		}
 		try {
-			final ITextEditor editor = ErlModelUtils.openInEditor(module);
+			final ITextEditor editor = (ITextEditor) ErlModelUtils
+					.openElement(module);
 			reveal(editor);
 		} catch (final PartInitException e) {
 			e.printStackTrace();

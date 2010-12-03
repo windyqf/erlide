@@ -78,7 +78,7 @@ public class GotoReferencedTestAction implements IWorkbenchWindowActionDelegate 
 
 	private void openElement(final IErlElement result)
 			throws ErlModelException, PartInitException {
-		ErlModelUtils.openInEditor(result);
+		ErlModelUtils.openElement(result);
 	}
 
 	private List<IErlElement> getSelectedElements(

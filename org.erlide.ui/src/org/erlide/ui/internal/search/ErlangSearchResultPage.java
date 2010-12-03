@@ -35,7 +35,7 @@ import org.erlide.core.builder.MarkerUtils;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.ui.editors.erl.ErlangEditor;
-import org.erlide.ui.editors.util.EditorUtility;
+import org.erlide.ui.util.ErlModelUtils;
 
 public class ErlangSearchResultPage extends AbstractTextSearchViewPage {
 
@@ -188,7 +188,7 @@ public class ErlangSearchResultPage extends AbstractTextSearchViewPage {
             final ErlangSearchElement ese = (ErlangSearchElement) element;
             final IErlModule module = ese.getModule();
             try {
-                final IEditorPart editor = EditorUtility.openInEditor(module);
+                final IEditorPart editor = ErlModelUtils.openElement(module);
                 if (offset != 0) {
                     if (editor instanceof ErlangEditor) {
                         final ErlangEditor ee = (ErlangEditor) editor;
