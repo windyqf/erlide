@@ -37,7 +37,7 @@ public class EUnitEventHandler extends EventHandler {
 	}
 
 	private enum EUnitMsgWhat {
-		test_begin, test_end, test_cancel, group_begin, group_end, group_cancel, terminated;
+		test_begin, test_end, test_cancel, group_begin, group_end, group_cancel, terminated, run_started;
 
 		static Set<String> allNames() {
 			final EUnitMsgWhat[] values = values();
@@ -146,6 +146,20 @@ public class EUnitEventHandler extends EventHandler {
 								.elementAt(1));
 						final String id = name; // FIXME
 						listener.testEnded(id, name);
+					}
+				};
+				break;
+			case run_started:
+				al = new AllListeners() {
+					public void apply(final ITestRunListener2 listener) {
+						listener.testRunStarted(0);
+					}
+				};
+				break;
+			case terminated:
+				al = new AllListeners() {
+					public void apply(final ITestRunListener2 listener) {
+						listener.testRunEnded(0);
 					}
 				};
 				break;

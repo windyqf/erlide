@@ -121,8 +121,7 @@ public class TestRunHandler extends DefaultHandler {
 			final String classname = attributes
 					.getValue(IXMLTags.ATTR_MODULENAME);
 			fTestCase = (TestCaseElement) fTestRunSession.createTestElement(
-					fTestSuite, getNextId(), name + '(' + classname + ')',
-					false);
+					fTestSuite, getNextId(), classname + ":" + name, false);
 			fNotRun.push(Boolean.valueOf(attributes
 					.getValue(IXMLTags.ATTR_INCOMPLETE)));
 			fTestCase.setIgnored(Boolean.valueOf(

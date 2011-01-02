@@ -18,7 +18,6 @@
 %% @author Jakob C
 %% @see eunit
 %% @doc EUnit listener for ErlIDE
-%% Based on initial code from Mickaël Rémond and Paul Guyot.
 
 -module(erlide_eunit_listener).
 
@@ -38,24 +37,24 @@
 
 -record(testcase,
         {
-          name :: chars(),
-          description :: chars(),
-          result :: ok | {failed, tuple()} | {aborted, tuple()} | {skipped, tuple()},
-          time :: integer(),
-          output :: binary()
-         }).
+         name :: chars(),
+         description :: chars(),
+         result :: ok | {failed, tuple()} | {aborted, tuple()} | {skipped, tuple()},
+         time :: integer(),
+         output :: binary()
+        }).
 
 -record(testsuite,
         {
-          name = <<>> :: binary(),
-          time = 0 :: integer(),
-          output = <<>> :: binary(),
-          succeeded = 0 :: integer(),
-          failed = 0 :: integer(),
-          aborted = 0 :: integer(),
-          skipped = 0 :: integer(),
-          testcases = [] :: [#testcase{}]
-    }).
+         name = <<>> :: binary(),
+         time = 0 :: integer(),
+         output = <<>> :: binary(),
+         succeeded = 0 :: integer(),
+         failed = 0 :: integer(),
+         aborted = 0 :: integer(),
+         skipped = 0 :: integer(),
+         testcases = [] :: [#testcase{}]
+        }).
 
 -record(state, {jpid,
                 testsuite = #testsuite{}
@@ -70,6 +69,7 @@ init(Options) ->
                 testsuite = #testsuite{}},
     receive
         {start, _Reference} ->
+            reply(St, run_started, {}),
             St
     end.
 
@@ -163,9 +163,9 @@ handle_cancel(test, Data, St) ->
       result = {skipped, Reason}, time = 0,
       output = <<>>},
     reply(St, test_cancel, TestCase),
-    NewTestSuite = TestSuite#testsuite{
-                     skipped = TestSuite#testsuite.skipped+1,
-                     testcases=[TestCase|TestSuite#testsuite.testcases] },
+    NewTestSuite = 
+        TestSuite#testsuite{skipped = TestSuite#testsuite.skipped + 1,
+                            testcases=[TestCase|TestSuite#testsuite.testcases] },
     St#state{testsuite=NewTestSuite}.
 
 format_name({Module, Function, Arity}, Line) ->
@@ -187,20 +187,19 @@ add_testcase_to_testsuite(ok, TestCaseTmp, TestSuite) ->
 add_testcase_to_testsuite({error, Exception}, TestCaseTmp, TestSuite) ->
     case Exception of
         {error,{AssertionException,_},_} when
-        AssertionException == assertion_failed;
-        AssertionException == assertMatch_failed;
-        AssertionException == assertEqual_failed;
-        AssertionException == assertException_failed;
-        AssertionException == assertCmd_failed;
-        AssertionException == assertCmdOutput_failed
-        ->
+          AssertionException == assertion_failed;
+          AssertionException == assertMatch_failed;
+          AssertionException == assertEqual_failed;
+          AssertionException == assertException_failed;
+          AssertionException == assertCmd_failed;
+          AssertionException == assertCmdOutput_failed ->
             TestCase = TestCaseTmp#testcase{ result = {failed, Exception} },
             TestSuite#testsuite{
-              failed = TestSuite#testsuite.failed+1,
-              testcases = [TestCase|TestSuite#testsuite.testcases] };
+                                failed = TestSuite#testsuite.failed+1,
+                                testcases = [TestCase|TestSuite#testsuite.testcases] };
         _ ->
             TestCase = TestCaseTmp#testcase{ result = {aborted, Exception} },
             TestSuite#testsuite{
-              aborted = TestSuite#testsuite.aborted+1,
-              testcases = [TestCase|TestSuite#testsuite.testcases] }
+                                aborted = TestSuite#testsuite.aborted+1,
+                                testcases = [TestCase|TestSuite#testsuite.testcases] }
     end.

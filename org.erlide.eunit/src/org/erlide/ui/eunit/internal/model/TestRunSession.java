@@ -136,7 +136,7 @@ public class TestRunSession implements ITestRunSession {
 
 		fLaunch = launch;
 		fProject = project;
-		fStartTime = -System.currentTimeMillis();
+		fStartTime = 0; // -System.currentTimeMillis();
 
 		Assert.isNotNull(testRunName);
 		fTestRunName = testRunName;

@@ -18,7 +18,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -38,9 +40,11 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -170,28 +174,29 @@ public final class EUnitModel {
 		 * TODO: restore on restart: - only import headers! - only import last n
 		 * sessions; remove all other files in historyDirectory
 		 */
-		// File historyDirectory= JUnitPlugin.getHistoryDirectory();
-		// File[] swapFiles= historyDirectory.listFiles();
-		// if (swapFiles != null) {
-		// Arrays.sort(swapFiles, new Comparator() {
-		// public int compare(Object o1, Object o2) {
-		// String name1= ((File) o1).getName();
-		// String name2= ((File) o2).getName();
-		// return name1.compareTo(name2);
-		// }
-		// });
-		// for (int i= 0; i < swapFiles.length; i++) {
-		// final File file= swapFiles[i];
-		// SafeRunner.run(new ISafeRunnable() {
-		// public void run() throws Exception {
-		// importTestRunSession(file );
-		// }
-		// public void handleException(Throwable exception) {
-		// JUnitPlugin.log(exception);
-		// }
-		// });
-		// }
-		// }
+		final File historyDirectory = EUnitPlugin.getHistoryDirectory();
+		final File[] swapFiles = historyDirectory.listFiles();
+		if (swapFiles != null) {
+			Arrays.sort(swapFiles, new Comparator<File>() {
+				public int compare(final File o1, final File o2) {
+					final String name1 = o1.getName();
+					final String name2 = o2.getName();
+					return name1.compareTo(name2);
+				}
+			});
+			for (int i = 0; i < swapFiles.length; i++) {
+				final File file = swapFiles[i];
+				SafeRunner.run(new ISafeRunnable() {
+					public void run() throws Exception {
+						importTestRunSession(file);
+					}
+
+					public void handleException(final Throwable exception) {
+						ErlLogger.error(exception);
+					}
+				});
+			}
+		}
 
 	}
 
@@ -354,84 +359,6 @@ public final class EUnitModel {
 		}
 		return null; // does not happen
 	}
-
-	// /**
-	// * Imports a test run session from the given URL.
-	// *
-	// * @param url
-	// * an URL to a test run session transcript
-	// * @param monitor
-	// * a progress monitor for cancellation
-	// * @return the imported test run session
-	// * @throws InvocationTargetException
-	// * wrapping a CoreException if the import failed
-	// * @throws InterruptedException
-	// * if the import was cancelled
-	// * @since 3.6
-	// */
-	// public static TestRunSession importTestRunSession(final String url,
-	// final IProgressMonitor monitor) throws InvocationTargetException,
-	// InterruptedException {
-	// monitor.beginTask(ModelMessages.JUnitModel_importing_from_url,
-	// IProgressMonitor.UNKNOWN);
-	// final TestRunHandler handler = new TestRunHandler();
-	//
-	// final CoreException[] exception = { null };
-	// final TestRunSession[] session = { null };
-	//
-	//		final Thread importThread = new Thread("JUnit URL importer") { //$NON-NLS-1$
-	// @Override
-	// public void run() {
-	// try {
-	// final SAXParserFactory parserFactory = SAXParserFactory
-	// .newInstance();
-	// // parserFactory.setValidating(true); // TODO: add DTD and
-	// // debug flag
-	// final SAXParser parser = parserFactory.newSAXParser();
-	// parser.parse(url, handler);
-	// session[0] = handler.getTestRunSession();
-	// } catch (final ParserConfigurationException e) {
-	// storeImportError(e);
-	// } catch (final SAXException e) {
-	// storeImportError(e);
-	// } catch (final IOException e) {
-	// storeImportError(e);
-	// }
-	// }
-	//
-	// private void storeImportError(final Exception e) {
-	// exception[0] = new CoreException(
-	// new org.eclipse.core.runtime.Status(IStatus.ERROR,
-	// JUnitCorePlugin.getPluginId(),
-	// ModelMessages.JUnitModel_could_not_import, e));
-	// }
-	// };
-	// importThread.start();
-	//
-	// while (session[0] == null && exception[0] == null
-	// && !monitor.isCanceled()) {
-	// try {
-	// Thread.sleep(100);
-	// } catch (final InterruptedException e) {
-	// // that's OK
-	// }
-	// }
-	// if (session[0] == null) {
-	// if (exception[0] != null) {
-	// throw new InvocationTargetException(exception[0]);
-	// } else {
-	// importThread.interrupt(); // have to kill the thread since we
-	// // don't control URLConnection and
-	// // XML
-	// // parsing
-	// throw new InterruptedException();
-	// }
-	// }
-	//
-	// JUnitCorePlugin.getModel().addTestRunSession(session[0]);
-	// monitor.done();
-	// return session[0];
-	// }
 
 	public static void importIntoTestRunSession(final File swapFile,
 			final TestRunSession testRunSession) throws CoreException {

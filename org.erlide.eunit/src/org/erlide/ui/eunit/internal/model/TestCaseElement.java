@@ -24,21 +24,6 @@ public class TestCaseElement extends TestElement implements ITestCaseElement {
 		Assert.isNotNull(parent);
 	}
 
-	// /**
-	// * {@inheritDoc}
-	// *
-	// * @see org.eclipse.jdt.junit.model.ITestCaseElement#getTestFunctionName()
-	// * @see
-	// org.eclipse.jdt.internal.junit.runner.MessageIds#TEST_IDENTIFIER_MESSAGE_FORMAT
-	// * @see
-	// org.eclipse.jdt.internal.junit.runner.MessageIds#IGNORED_TEST_PREFIX
-	// */
-	// public String getTestFunctionName() {
-	// final String testName = getTestName();
-	// final String[] mf = testName.split(":");
-	// return mf[1];
-	// }
-
 	/**
 	 * {@inheritDoc}
 	 * 
@@ -76,8 +61,20 @@ public class TestCaseElement extends TestElement implements ITestCaseElement {
 		return "TestCase: " + getTestModuleName() + "." + getTestFunctionName() + " : " + super.toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see org.erlide.ui.eunit.model.ITestCaseElement#getTestFunctionName()
+	 */
 	public String getTestFunctionName() {
-		final String mf[] = getTestName().split(":");
+		final String testName = getTestName();
+		final String mf[] = testName.split(":");
 		return mf[1];
+	}
+
+	public int getLineNumber() {
+		final String functionName = getTestFunctionName();
+		final String[] nl = functionName.split("_");
+		return Integer.valueOf(nl[1]);
 	}
 }

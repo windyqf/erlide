@@ -22,7 +22,7 @@ import org.erlide.core.erlang.IErlProject;
 import org.erlide.ui.util.ErlModelUtils;
 
 /**
- * Abstract Action for opening a Java editor.
+ * Abstract Action for opening an erlang editor.
  */
 public abstract class OpenEditorAction extends Action {
 	protected String fModuleName;

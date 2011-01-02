@@ -15,6 +15,8 @@ package org.erlide.ui.eunit.internal.launcher;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -33,8 +35,8 @@ import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IErlFunction;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlProject;
-import org.erlide.core.erlang.util.ErlangFunctionCall;
 import org.erlide.eunit.EUnitPlugin;
+import org.erlide.eunit.TestFunction;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.runtime.backend.ErlideBackend;
@@ -42,11 +44,11 @@ import org.erlide.runtime.launch.ErlLaunchAttributes;
 import org.erlide.runtime.launch.ErlLaunchData;
 import org.erlide.runtime.launch.ErlangLaunchConfigurationDelegate;
 
-import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangPid;
-import com.ericsson.otp.erlang.OtpErlangTuple;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 
 import erlang.ErlideEUnit;
@@ -63,7 +65,12 @@ import erlang.ErlideEUnit;
 public class EUnitLaunchConfigurationDelegate extends
 		ErlangLaunchConfigurationDelegate {
 
-	private List<ErlangFunctionCall> fTestElements;
+	public EUnitLaunchConfigurationDelegate() {
+		super();
+		EUnitPlugin.getModel();
+	}
+
+	private Collection<TestFunction> fTestElements;
 
 	/*
 	 * (non-Javadoc)
@@ -141,7 +148,7 @@ public class EUnitLaunchConfigurationDelegate extends
 				return;
 			}
 		} finally {
-			fTestElements = null;
+			// fTestElements = null;
 			monitor.done();
 		}
 	}
@@ -198,17 +205,6 @@ public class EUnitLaunchConfigurationDelegate extends
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate#
-	 * verifyMainTypeName(org.eclipse.debug.core.ILaunchConfiguration)
-	 */
-	public String verifyMainTypeName(final ILaunchConfiguration configuration)
-			throws CoreException {
-		return "org.eclipse.jdt.internal.junit.runner.RemoteTestRunner"; //$NON-NLS-1$
-	}
-
 	/**
 	 * Evaluates all test elements selected by the given launch configuration.
 	 * The elements are of type {@link IErlModule} or {@link IErlFunction}. At
@@ -223,21 +219,36 @@ public class EUnitLaunchConfigurationDelegate extends
 	 * @throws CoreException
 	 *             an exception is thrown when the search for tests failed
 	 */
-	protected static List<ErlangFunctionCall> evaluateTests(
+	protected static Collection<TestFunction> evaluateTests(
 			final ILaunchConfiguration configuration,
 			final IProgressMonitor monitor) throws CoreException {
 		List<IErlProject> erlProjects = getErlProjects(configuration);
 		final String testProject = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT, ""); //$NON-NLS-1$
 		erlProjects = filterTestProjects(testProject, erlProjects);
-		List<ErlangFunctionCall> testFunctions = getTestFunctions(monitor,
+		Collection<TestFunction> testFunctions = getTestFunctions(monitor,
 				erlProjects);
 		final String testModuleName = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_MODULE, ""); //$NON-NLS-1$
-		testFunctions = filterTestModule(testModuleName, testFunctions);
+		testFunctions = Collections2.filter(testFunctions,
+				new Predicate<TestFunction>() {
+					public boolean apply(final TestFunction testFunction) {
+						return testModuleName.length() == 0
+								|| testFunction.getModule().equals(
+										testModuleName);
+					}
+				});
+
 		final String testFunctionName = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_FUNCTION, ""); //$NON-NLS-1$
-		testFunctions = filterTestFunction(testFunctionName, testFunctions);
+		testFunctions = Collections2.filter(testFunctions,
+				new Predicate<TestFunction>() {
+					public boolean apply(final TestFunction testFunction) {
+						return testFunctionName.length() == 0
+								|| testFunction.getName().equals(
+										testFunctionName);
+					}
+				});
 		if (testFunctions.isEmpty()) {
 			final String msg = MessageFormat.format(
 					"No tests found with test runner ''{0}''.", "EUnit");
@@ -246,47 +257,17 @@ public class EUnitLaunchConfigurationDelegate extends
 		return testFunctions;
 	}
 
-	private static List<ErlangFunctionCall> filterTestFunction(
-			final String testFunctionName,
-			final List<ErlangFunctionCall> testFunctions) {
-		if (testFunctionName.length() == 0) {
-			return testFunctions;
-		}
-		final List<ErlangFunctionCall> result = Lists.newArrayList();
-		for (final ErlangFunctionCall erlangFunctionCall : result) {
-			if (erlangFunctionCall.getName().equals(testFunctionName)) {
-				result.add(erlangFunctionCall);
-			}
-		}
-		return result;
-	}
-
-	private static List<ErlangFunctionCall> getTestFunctions(
+	private static List<TestFunction> getTestFunctions(
 			final IProgressMonitor monitor, final List<IErlProject> erlProjects)
 			throws CoreException {
 		final IErlangTestFinder finder = new EUnitTestFinder();
-		final List<ErlangFunctionCall> testFunctions = Lists.newArrayList();
+		final List<TestFunction> testFunctions = Lists.newArrayList();
 		for (final IErlProject erlProject : erlProjects) {
-			final List<ErlangFunctionCall> testsInContainer = finder
+			final List<TestFunction> testsInContainer = finder
 					.findTestsInContainer(erlProject, erlProject, monitor);
 			testFunctions.addAll(testsInContainer);
 		}
 		return testFunctions;
-	}
-
-	private static List<ErlangFunctionCall> filterTestModule(
-			final String testModuleName,
-			final List<ErlangFunctionCall> testFunctions) {
-		if (testModuleName.length() == 0) {
-			return testFunctions;
-		}
-		final List<ErlangFunctionCall> result = Lists.newArrayList();
-		for (final ErlangFunctionCall erlangFunctionCall : testFunctions) {
-			if (erlangFunctionCall.getModule().equals(testModuleName)) {
-				result.add(erlangFunctionCall);
-			}
-		}
-		return result;
 	}
 
 	private static List<IErlProject> filterTestProjects(
@@ -379,13 +360,10 @@ public class EUnitLaunchConfigurationDelegate extends
 		final OtpErlangPid jpid = backend.getEventPid();
 		final OtpErlangObject elems[] = new OtpErlangObject[fTestElements
 				.size()];
+		final Iterator<TestFunction> iterator = fTestElements.iterator();
 		for (int i = 0; i < elems.length; i++) {
-			final ErlangFunctionCall erlangFunctionCall = fTestElements.get(i);
-			final OtpErlangAtom modA = new OtpErlangAtom(
-					erlangFunctionCall.getModule());
-			final OtpErlangAtom funA = new OtpErlangAtom(
-					erlangFunctionCall.getName());
-			elems[i] = new OtpErlangTuple(new OtpErlangObject[] { modA, funA });
+			final TestFunction testFunction = iterator.next();
+			elems[i] = testFunction.getTuple();
 		}
 		final OtpErlangList tests = new OtpErlangList(elems);
 		ErlideEUnit.runTests(backend, tests, jpid);

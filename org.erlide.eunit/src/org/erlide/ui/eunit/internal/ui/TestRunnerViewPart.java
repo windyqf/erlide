@@ -290,9 +290,9 @@ public class TestRunnerViewPart extends ViewPart {
 	 * A Job that runs as long as a test run is running. It is used to show
 	 * busyness for running jobs in the view (title in italics).
 	 */
-	private JUnitIsRunningJob fJUnitIsRunningJob;
-	private ILock fJUnitIsRunningLock;
-	public static final Object FAMILY_JUNIT_RUN = new Object();
+	private EUnitIsRunningJob fEUnitIsRunningJob;
+	private ILock fEUnitIsRunningLock;
+	public static final Object FAMILY_EUNIT_RUN = new Object();
 
 	private final IPartListener2 fPartListener = new IPartListener2() {
 		public void partActivated(final IWorkbenchPartReference ref) {
@@ -840,8 +840,8 @@ public class TestRunnerViewPart extends ViewPart {
 		}
 	}
 
-	private class JUnitIsRunningJob extends Job {
-		public JUnitIsRunningJob(final String name) {
+	private class EUnitIsRunningJob extends Job {
+		public EUnitIsRunningJob(final String name) {
 			super(name);
 			setSystem(true);
 		}
@@ -849,13 +849,13 @@ public class TestRunnerViewPart extends ViewPart {
 		@Override
 		public IStatus run(final IProgressMonitor monitor) {
 			// wait until the test run terminates
-			fJUnitIsRunningLock.acquire();
+			fEUnitIsRunningLock.acquire();
 			return Status.OK_STATUS;
 		}
 
 		@Override
 		public boolean belongsTo(final Object family) {
-			return family == TestRunnerViewPart.FAMILY_JUNIT_RUN;
+			return family == TestRunnerViewPart.FAMILY_EUNIT_RUN;
 		}
 	}
 
@@ -898,8 +898,8 @@ public class TestRunnerViewPart extends ViewPart {
 
 	private class StopAction extends Action {
 		public StopAction() {
-			setText("Stop JUnit Test");
-			setToolTipText("Stop JUnit Test Run");
+			setText("Stop EUnit Test");
+			setToolTipText("Stop EUnit Test Run");
 			EUnitPlugin.setLocalImageDescriptors(this, "stop.gif"); //$NON-NLS-1$
 		}
 
@@ -1086,7 +1086,8 @@ public class TestRunnerViewPart extends ViewPart {
 	private class ActivateOnErrorAction extends Action {
 		public ActivateOnErrorAction() {
 			super("Activate on &Error/Failure Only", IAction.AS_CHECK_BOX);
-			//setImageDescriptor(JUnitPlugin.getImageDescriptor("obj16/failures.gif")); //$NON-NLS-1$
+			setImageDescriptor(EUnitPlugin
+					.getImageDescriptor("obj16/failures.gif")); //$NON-NLS-1$
 			update();
 		}
 
@@ -1147,7 +1148,7 @@ public class TestRunnerViewPart extends ViewPart {
 		final IWorkbenchSiteProgressService progressService = getProgressService();
 		if (progressService != null) {
 			progressService
-					.showBusyForFamily(TestRunnerViewPart.FAMILY_JUNIT_RUN);
+					.showBusyForFamily(TestRunnerViewPart.FAMILY_EUNIT_RUN);
 		}
 	}
 
@@ -1252,15 +1253,15 @@ public class TestRunnerViewPart extends ViewPart {
 		if (fUpdateJob != null) {
 			return;
 		}
-		fJUnitIsRunningJob = new JUnitIsRunningJob("JUnit Starter Job");
-		fJUnitIsRunningLock = Job.getJobManager().newLock();
+		fEUnitIsRunningJob = new EUnitIsRunningJob("EUnit Starter Job");
+		fEUnitIsRunningLock = Job.getJobManager().newLock();
 		// acquire lock while a test run is running
 		// the lock is released when the test run terminates
 		// the wrapper job will wait on this lock.
-		fJUnitIsRunningLock.acquire();
-		getProgressService().schedule(fJUnitIsRunningJob);
+		fEUnitIsRunningLock.acquire();
+		getProgressService().schedule(fEUnitIsRunningJob);
 
-		fUpdateJob = new UpdateUIJob("Update JUnit");
+		fUpdateJob = new UpdateUIJob("Update EUnit");
 		fUpdateJob.schedule(REFRESH_INTERVAL);
 	}
 
@@ -1269,9 +1270,9 @@ public class TestRunnerViewPart extends ViewPart {
 			fUpdateJob.stop();
 			fUpdateJob = null;
 		}
-		if (fJUnitIsRunningJob != null && fJUnitIsRunningLock != null) {
-			fJUnitIsRunningLock.release();
-			fJUnitIsRunningJob = null;
+		if (fEUnitIsRunningJob != null && fEUnitIsRunningLock != null) {
+			fEUnitIsRunningLock.release();
+			fEUnitIsRunningJob = null;
 		}
 		postSyncProcessChanges();
 	}
@@ -1391,7 +1392,7 @@ public class TestRunnerViewPart extends ViewPart {
 					.openInformation(
 							getSite().getShell(),
 							"Rerun Test",
-							"To rerun tests they must be launched under the debugger\nand \'Keep JUnit running\' must be set in the launch configuration.");
+							"To rerun tests they must be launched under the debugger\nand \'Keep EUnit running\' must be set in the launch configuration.");
 		}
 	}
 
@@ -2139,6 +2140,10 @@ public class TestRunnerViewPart extends ViewPart {
 				.getLaunchedProject();
 	}
 
+	public ILaunch getLastLaunch() {
+		return fTestRunSession == null ? null : fTestRunSession.getLaunch();
+	}
+
 	private boolean isDisposed() {
 		return fIsDisposed || fCounterPanel.isDisposed();
 	}
@@ -2205,7 +2210,7 @@ public class TestRunnerViewPart extends ViewPart {
 						.openInformation(
 								getSite().getShell(),
 								"Rerun Test",
-								"To rerun tests they must be launched under the debugger\nand \'Keep JUnit running\' must be set in the launch configuration.");
+								"To rerun tests they must be launched under the debugger\nand \'Keep EUnit running\' must be set in the launch configuration.");
 			} else if (fTestRunSession.isKeptAlive()) {
 				final TestCaseElement testCaseElement = (TestCaseElement) fTestRunSession
 						.getTestElement(testId);

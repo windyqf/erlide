@@ -23,7 +23,7 @@ find_tests(Beams) ->
 
 run_tests(Tests, JPid) ->
     eunit:test(Tests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]),
-    timer:sleep(1000000),
+    timer:sleep(10000),
     erlang:halt().
 
 %%
@@ -33,10 +33,37 @@ run_tests(Tests, JPid) ->
 get_exported_tests(Beam) ->
     {ok, Chunks} = beam_lib:chunks(Beam, [exports]),
     {Module, ExportsList} = Chunks,
-    get_tests(ExportsList, Module).
+    get_tests(ExportsList, Module, Beam, []).
 
-get_tests([], _M) ->
-    [];
-get_tests([{exports, Exports} | Rest], M) ->
-    Tests = [{M, F, A} || {F, A} <- Exports, lists:suffix("_test_", atom_to_list(F))],
-    [Tests | get_tests(Rest, M)].
+get_tests([], _M, _B, Acc) ->
+    Acc;
+get_tests([{exports, Exports} | Rest], M, Beam, Acc) ->
+    NewAcc = get_tests_aux(Exports, M, Beam, Acc),
+    get_tests(Rest, M, Beam, NewAcc).
+
+get_tests_aux([], _M, _B, Acc) ->
+    Acc;
+get_tests_aux([{F, 0} | Rest], Module, Beam, Acc) ->
+    Name = atom_to_list(F),
+    case is_generator_name(Name) of
+        true ->
+            code:load_abs(filename:rootname(Beam)),
+            Tests = [{Module, Fun, N} || {N, Fun} <- Module:F()],
+            code:delete(Module),
+            get_tests_aux(Rest, Module, Beam, [Acc | Tests]);
+        false ->
+            case is_test_name(Name) of
+                true ->
+                    get_tests_aux(Rest, Module, Beam, [Acc | [{Module, F}]]);
+                false ->
+                    get_tests_aux(Rest, Module, Beam, Acc)
+            end
+    end;
+get_tests_aux([_ | Rest], Module, Beam, Acc) ->
+    get_tests_aux(Rest, Module, Beam, Acc).
+
+is_generator_name(Name) ->
+    lists:suffix("_test_", Name).
+
+is_test_name(Name) ->
+    lists:suffix("_test", Name).

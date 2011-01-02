@@ -86,6 +86,8 @@ public class EUnitPreferencesConstants {
 			"sun.reflect.*", //$NON-NLS-1$
 	};
 
+	private static final String[] EMPTY_STRING_LIST = new String[0];
+
 	private EUnitPreferencesConstants() {
 		// no instance
 	}
@@ -130,6 +132,9 @@ public class EUnitPreferencesConstants {
 	 * @return an array of strings
 	 */
 	public static String[] parseList(final String listString) {
+		if (listString == null) {
+			return EMPTY_STRING_LIST;
+		}
 		final List<String> list = new ArrayList<String>(10);
 		final StringTokenizer tokenizer = new StringTokenizer(listString, ","); //$NON-NLS-1$
 		while (tokenizer.hasMoreTokens()) {

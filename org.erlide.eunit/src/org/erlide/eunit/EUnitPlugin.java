@@ -31,7 +31,7 @@ public class EUnitPlugin extends AbstractUIPlugin {
 
 	private static final String HISTORY_DIR_NAME = "history";
 
-	private static final String ICONS_PATH = "/icons/full/obj16/";
+	private static final String ICONS_PATH = "/icons/full/";
 
 	// The shared instance
 	private static EUnitPlugin plugin;
