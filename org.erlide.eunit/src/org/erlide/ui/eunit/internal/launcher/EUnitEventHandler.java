@@ -14,6 +14,7 @@ import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.ui.eunit.internal.model.ITestRunListener2;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
+import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangTuple;
@@ -131,10 +132,14 @@ public class EUnitEventHandler extends EventHandler {
 							listener.testEnded(id, name);
 						} else {
 							final OtpErlangTuple failureT = (OtpErlangTuple) testResult;
+							final String expected = getValueExpected(
+									testResult, "expected");
+							final String value = getValueExpected(testResult,
+									"value");
 							listener.testFailed(
 									ITestRunListener2.STATUS_FAILURE, id, name,
-									failureT.elementAt(1).toString(), "true",
-									"false"); // FIXME
+									failureT.elementAt(1).toString(), expected,
+									value);
 						}
 					}
 				};
@@ -168,6 +173,27 @@ public class EUnitEventHandler extends EventHandler {
 				allListeners(al);
 			}
 		}
+	}
+
+	protected static String getValueExpected(final OtpErlangObject testResult,
+			final String what) {
+		final OtpErlangTuple t = (OtpErlangTuple) testResult;
+		final OtpErlangTuple t2 = (OtpErlangTuple) t.elementAt(1);
+		final OtpErlangTuple t3 = (OtpErlangTuple) t2.elementAt(1);
+		final OtpErlangList l = (OtpErlangList) t3.elementAt(1);
+		for (final OtpErlangObject i : l) {
+			if (i instanceof OtpErlangTuple) {
+				final OtpErlangTuple et = (OtpErlangTuple) i;
+				final OtpErlangObject o = et.elementAt(0);
+				if (o instanceof OtpErlangAtom) {
+					final OtpErlangAtom whatA = (OtpErlangAtom) o;
+					if (whatA.atomValue().equals(what)) {
+						return et.elementAt(1).toString();
+					}
+				}
+			}
+		}
+		return what;
 	}
 
 	private Tuple<EUnitMsgWhat, OtpErlangTuple> getEUnitMsg(

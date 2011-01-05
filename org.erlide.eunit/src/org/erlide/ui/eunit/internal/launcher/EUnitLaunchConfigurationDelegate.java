@@ -36,7 +36,7 @@ import org.erlide.core.erlang.IErlFunction;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.eunit.EUnitPlugin;
-import org.erlide.eunit.TestFunction;
+import org.erlide.eunit.EUnitTestFunction;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.runtime.backend.ErlideBackend;
@@ -70,7 +70,7 @@ public class EUnitLaunchConfigurationDelegate extends
 		EUnitPlugin.getModel();
 	}
 
-	private Collection<TestFunction> fTestElements;
+	private Collection<EUnitTestFunction> fTestElements;
 
 	/*
 	 * (non-Javadoc)
@@ -219,20 +219,20 @@ public class EUnitLaunchConfigurationDelegate extends
 	 * @throws CoreException
 	 *             an exception is thrown when the search for tests failed
 	 */
-	protected static Collection<TestFunction> evaluateTests(
+	protected static Collection<EUnitTestFunction> evaluateTests(
 			final ILaunchConfiguration configuration,
 			final IProgressMonitor monitor) throws CoreException {
 		List<IErlProject> erlProjects = getErlProjects(configuration);
 		final String testProject = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_PROJECT, ""); //$NON-NLS-1$
 		erlProjects = filterTestProjects(testProject, erlProjects);
-		Collection<TestFunction> testFunctions = getTestFunctions(monitor,
+		Collection<EUnitTestFunction> testFunctions = getTestFunctions(monitor,
 				erlProjects);
 		final String testModuleName = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_MODULE, ""); //$NON-NLS-1$
 		testFunctions = Collections2.filter(testFunctions,
-				new Predicate<TestFunction>() {
-					public boolean apply(final TestFunction testFunction) {
+				new Predicate<EUnitTestFunction>() {
+					public boolean apply(final EUnitTestFunction testFunction) {
 						return testModuleName.length() == 0
 								|| testFunction.getModule().equals(
 										testModuleName);
@@ -242,8 +242,8 @@ public class EUnitLaunchConfigurationDelegate extends
 		final String testFunctionName = configuration.getAttribute(
 				EUnitLaunchConfigurationConstants.ATTR_TEST_FUNCTION, ""); //$NON-NLS-1$
 		testFunctions = Collections2.filter(testFunctions,
-				new Predicate<TestFunction>() {
-					public boolean apply(final TestFunction testFunction) {
+				new Predicate<EUnitTestFunction>() {
+					public boolean apply(final EUnitTestFunction testFunction) {
 						return testFunctionName.length() == 0
 								|| testFunction.getName().equals(
 										testFunctionName);
@@ -257,13 +257,13 @@ public class EUnitLaunchConfigurationDelegate extends
 		return testFunctions;
 	}
 
-	private static List<TestFunction> getTestFunctions(
+	private static List<EUnitTestFunction> getTestFunctions(
 			final IProgressMonitor monitor, final List<IErlProject> erlProjects)
 			throws CoreException {
 		final IErlangTestFinder finder = new EUnitTestFinder();
-		final List<TestFunction> testFunctions = Lists.newArrayList();
+		final List<EUnitTestFunction> testFunctions = Lists.newArrayList();
 		for (final IErlProject erlProject : erlProjects) {
-			final List<TestFunction> testsInContainer = finder
+			final List<EUnitTestFunction> testsInContainer = finder
 					.findTestsInContainer(erlProject, erlProject, monitor);
 			testFunctions.addAll(testsInContainer);
 		}
@@ -360,9 +360,9 @@ public class EUnitLaunchConfigurationDelegate extends
 		final OtpErlangPid jpid = backend.getEventPid();
 		final OtpErlangObject elems[] = new OtpErlangObject[fTestElements
 				.size()];
-		final Iterator<TestFunction> iterator = fTestElements.iterator();
+		final Iterator<EUnitTestFunction> iterator = fTestElements.iterator();
 		for (int i = 0; i < elems.length; i++) {
-			final TestFunction testFunction = iterator.next();
+			final EUnitTestFunction testFunction = iterator.next();
 			elems[i] = testFunction.getTuple();
 		}
 		final OtpErlangList tests = new OtpErlangList(elems);

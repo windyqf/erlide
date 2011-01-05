@@ -2,7 +2,7 @@ package erlang;
 
 import java.util.List;
 
-import org.erlide.eunit.TestFunction;
+import org.erlide.eunit.EUnitTestFunction;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.BackendException;
 import org.erlide.jinterface.backend.util.Util;
@@ -16,7 +16,7 @@ import com.google.common.collect.Lists;
 
 public final class ErlideEUnit {
 
-	public static List<TestFunction> findTests(final Backend backend,
+	public static List<EUnitTestFunction> findTests(final Backend backend,
 			final List<String> beams) {
 		OtpErlangObject res = null;
 		try {
@@ -27,11 +27,11 @@ public final class ErlideEUnit {
 		if (Util.isOk(res)) {
 			final OtpErlangTuple t = (OtpErlangTuple) res;
 			final OtpErlangList l = (OtpErlangList) t.elementAt(1);
-			final List<TestFunction> result = Lists.newArrayListWithCapacity(l
+			final List<EUnitTestFunction> result = Lists.newArrayListWithCapacity(l
 					.arity());
 			for (final OtpErlangObject i : l) {
 				final OtpErlangTuple funT = (OtpErlangTuple) i;
-				result.add(new TestFunction(funT));
+				result.add(new EUnitTestFunction(funT));
 			}
 			return result;
 		}

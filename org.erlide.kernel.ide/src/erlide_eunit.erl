@@ -18,11 +18,12 @@
 %%
 
 find_tests(Beams) ->
-    R = lists:flatten([get_exported_tests(Beam) || Beam <- Beams]),
+    R = get_exported_tests(Beams),
     {ok, R}.
 
 run_tests(Tests, JPid) ->
-    eunit:test(Tests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]),
+    EUnitTests = get_tests(Tests),
+    eunit:test(EUnitTests, [{report, {erlide_eunit_listener, [{jpid, JPid}]}}]),
     timer:sleep(10000),
     erlang:halt().
 
@@ -30,16 +31,28 @@ run_tests(Tests, JPid) ->
 %% Local Functions
 %%
 
-get_exported_tests(Beam) ->
+-record(test, {m, f}).
+-record(generated, {m, f}).
+
+get_exported_tests(Beams) ->
+    get_exported_tests(Beams, []).
+
+get_exported_tests([], Acc) ->
+    lists:reverse(Acc);
+get_exported_tests([Beam | Rest], Acc) ->
+    NewAcc = get_exported_tests_aux(Beam, Acc),
+    get_exported_tests(Rest, NewAcc).
+
+get_exported_tests_aux(Beam, Acc) ->
     {ok, Chunks} = beam_lib:chunks(Beam, [exports]),
     {Module, ExportsList} = Chunks,
-    get_tests(ExportsList, Module, Beam, []).
+    get_tests(ExportsList, Module, Beam, Acc).
 
 get_tests([], _M, _B, Acc) ->
     Acc;
-get_tests([{exports, Exports} | Rest], M, Beam, Acc) ->
-    NewAcc = get_tests_aux(Exports, M, Beam, Acc),
-    get_tests(Rest, M, Beam, NewAcc).
+get_tests([{exports, Exports} | Rest], Module, Beam, Acc) ->
+    NewAcc = get_tests_aux(Exports, Module, Beam, Acc),
+    get_tests(Rest, Module, Beam, NewAcc).
 
 get_tests_aux([], _M, _B, Acc) ->
     Acc;
@@ -47,14 +60,11 @@ get_tests_aux([{F, 0} | Rest], Module, Beam, Acc) ->
     Name = atom_to_list(F),
     case is_generator_name(Name) of
         true ->
-            code:load_abs(filename:rootname(Beam)),
-            Tests = [{Module, Fun, N} || {N, Fun} <- Module:F()],
-            code:delete(Module),
-            get_tests_aux(Rest, Module, Beam, [Acc | Tests]);
+            get_tests_aux(Rest, Module, Beam, [#generated{m=Module, f=F} | Acc]);
         false ->
             case is_test_name(Name) of
                 true ->
-                    get_tests_aux(Rest, Module, Beam, [Acc | [{Module, F}]]);
+                    get_tests_aux(Rest, Module, Beam, [#test{m=Module, f=F} | Acc]);
                 false ->
                     get_tests_aux(Rest, Module, Beam, Acc)
             end
@@ -67,3 +77,13 @@ is_generator_name(Name) ->
 
 is_test_name(Name) ->
     lists:suffix("_test", Name).
+
+get_tests(Tests) ->
+    get_tests(Tests, []).
+
+get_tests([], Acc) ->
+    lists:reverse(Acc);
+get_tests([#generated{m=Module, f=F} | Rest], Acc) ->
+    get_tests(Rest, (lists:reverse(Module:F(), Acc)));
+get_tests([Test | Rest], Acc) ->
+    get_tests(Rest, [Test | Acc]).

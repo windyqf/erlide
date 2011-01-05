@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.erlide.core.erlang.IErlElement;
 import org.erlide.core.erlang.IErlProject;
-import org.erlide.eunit.TestFunction;
+import org.erlide.eunit.EUnitTestFunction;
 
 /**
  * Interface to be implemented by for extension point
@@ -37,7 +37,7 @@ public interface IErlangTestFinder {
 	// }
 	// };
 
-	public List<TestFunction> findTestsInContainer(final IErlProject project,
+	public List<EUnitTestFunction> findTestsInContainer(final IErlProject project,
 			IErlElement parent, IProgressMonitor pm) throws CoreException;
 
 	// public boolean isTest(IErlElement element) throws CoreException;

@@ -26,7 +26,7 @@ import org.erlide.core.erlang.IErlElement.Kind;
 import org.erlide.core.erlang.IErlElementVisitor;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlProject;
-import org.erlide.eunit.TestFunction;
+import org.erlide.eunit.EUnitTestFunction;
 import org.erlide.runtime.backend.ErlideBackend;
 
 import com.google.common.collect.Lists;
@@ -35,7 +35,7 @@ import erlang.ErlideEUnit;
 
 public class EUnitTestFinder implements IErlangTestFinder {
 
-	public List<TestFunction> findTestsInContainer(final IErlProject project,
+	public List<EUnitTestFunction> findTestsInContainer(final IErlProject project,
 			final IErlElement parent, IProgressMonitor pm) throws CoreException {
 		if (parent == null) { // XXX hmmm
 			throw new IllegalArgumentException();
@@ -64,7 +64,7 @@ public class EUnitTestFinder implements IErlangTestFinder {
 		return null;
 	}
 
-	public List<TestFunction> findTestsInModules(final IErlProject project,
+	public List<EUnitTestFunction> findTestsInModules(final IErlProject project,
 			final List<IErlModule> modules, final IProgressMonitor pm)
 			throws CoreException {
 		try {

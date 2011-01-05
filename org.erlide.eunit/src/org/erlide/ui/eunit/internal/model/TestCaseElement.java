@@ -74,7 +74,11 @@ public class TestCaseElement extends TestElement implements ITestCaseElement {
 
 	public int getLineNumber() {
 		final String functionName = getTestFunctionName();
-		final String[] nl = functionName.split("_");
-		return Integer.valueOf(nl[1]);
+		final int un = functionName.lastIndexOf('_');
+		if (un != -1) {
+			final String n = functionName.substring(un + 1);
+			return Integer.valueOf(n);
+		}
+		return -1;
 	}
 }

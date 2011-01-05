@@ -308,7 +308,7 @@ public class ErlideUIPlugin extends AbstractUIPlugin {
      */
     public static IWorkbenchPage getActivePage() {
         final IWorkbenchWindow w = getActiveWorkbenchWindow();
-        ErlLogger.debug("active w %s", w);
+        // ErlLogger.debug("active w %s", w);
         if (w != null) {
             return w.getActivePage();
         }
