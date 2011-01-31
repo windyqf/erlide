@@ -14,6 +14,8 @@
 %% Exported Functions
 %%
 
+-export([test_parse/1]).
+
 %%
 %% API Functions
 %%
@@ -54,6 +56,27 @@ parsing_define_with_record_ref_test_() ->
                                             extra="xx, #x{}"}],
                           comments=[]},
                    test_parse("-define(xx, #x{})."))].
+
+parsing_record_def_test_() ->
+    Expected = #model{forms = [#attribute{pos = {{0, 0, 0}, 32},
+                                          name = record,
+                                          args = {a, [{b, {{0, 0, 12}, 1}, ""},
+                                                      {c, {{0, 0, 15}, 1}, ":: integer()"}]},
+                                          extra = "a, {b, c :: integer()}"}],
+                      comments = []},
+    Value = test_parse("-record(a, {b, c :: integer()})."),
+    [?_assertEqual(Expected, Value)].
+
+parsing_function_with_macro_test_() ->
+    %% http://www.assembla.com/spaces/erlide/tickets/571-functions-defined-with-macros-confuses-the-model
+    [?_assertEqual(#model{forms=[#function{pos = {{0, 0, 0},12},
+					   name = '?f', arity = 0,
+					   args = [], head = "", clauses = [],
+					   name_pos = {{0, 0}, 2},
+					   comment = undefined,
+					   exported = false}],
+			  comments = []},
+		   test_parse("?f() -> ok."))].
 
 %%
 %% Local Functions

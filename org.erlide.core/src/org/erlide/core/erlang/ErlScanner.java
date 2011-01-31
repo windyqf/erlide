@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.erlide.core.erlang;
 
-import org.erlide.core.text.ErlangToolkit;
 import org.erlide.jinterface.backend.IDisposable;
 
 import erlang.ErlideScanner;
@@ -19,42 +18,37 @@ import erlang.ErlideScanner;
  * Erlang syntax scanner
  */
 public class ErlScanner implements IDisposable {
-	private final String moduleName;
-	private int refCount = 0;
+    private int refCount = 0;
+    private final String scannerName;
 
-	public ErlScanner(final IErlModule module, final String initialText,
-			final String moduleFileName) {
-		moduleName = ErlangToolkit.createScannerModuleName(module);
-		ErlideScanner.initialScan(moduleName, moduleFileName, initialText,
-				false);
-	}
+    public ErlScanner(final String scannerName, final String initialText,
+            final String path, final boolean useCaches) {
+        this.scannerName = scannerName;
+        ErlideScanner.initialScan(scannerName, path, initialText, useCaches);
+    }
 
-	public void addRef() {
-		++refCount;
-	}
+    public void addRef() {
+        ++refCount;
+    }
 
-	public boolean willDispose() {
-		return refCount == 1;
-	}
+    public boolean willDispose() {
+        return refCount == 1;
+    }
 
-	public void dispose() {
-		--refCount;
-		if (refCount == 0) {
-			ErlideScanner.destroy(moduleName);
-		}
-	}
+    public void dispose() {
+        --refCount;
+        if (refCount == 0) {
+            ErlideScanner.destroy(scannerName);
+        }
+    }
 
-	public void replaceText(final int offset, final int removeLength,
-			final String newText) {
-		ErlideScanner.replaceText(moduleName, offset, removeLength, newText);
-	}
+    public void replaceText(final int offset, final int removeLength,
+            final String newText) {
+        ErlideScanner.replaceText(scannerName, offset, removeLength, newText);
+    }
 
-	public ErlToken getTokenAt(final int offset) {
-		return ErlideScanner.getTokenAt(moduleName, offset);
-	}
-
-	public String getScannerModuleName() {
-		return moduleName;
-	}
+    public ErlToken getTokenAt(final int offset) {
+        return ErlideScanner.getTokenAt(scannerName, offset);
+    }
 
 }

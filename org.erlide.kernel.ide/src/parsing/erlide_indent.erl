@@ -277,6 +277,10 @@ i_expr_rest(R0, I, A) ->
             R1 = i_kind('||', R0, I),
             R2 = i_expr_list(R1, I),
             {R2, A};
+        '<=' -> % within binary comprehension
+            R1 = i_kind('<=', R0, I),
+            {R2, _A} = i_expr(R1, i_with(after_binary_op, I), none),
+            {R2, A};
         '=' -> % match/assignment
             R1 = i_binary_op(R0, i_with(before_binary_op, I)),
             {R2, _A} = i_expr(R1, i_with(after_binary_op, I), none),
@@ -716,8 +720,14 @@ i_form(R0, I) ->
 i_declaration(R0, I) ->
     i_check(R0, I),
     R1 = i_kind('-', R0, I),
-    {R, _A} = i_expr(R1, I, none),
-    i_kind(dot, R, I).
+    case i_sniff(R1) of
+        'spec' ->
+            R2 = i_kind('spec', R1, I),
+            i_form(R2, I);
+        _ ->
+            {R2, _A} = i_expr(R1, I, none),
+            i_kind(dot, R2, I)
+    end.
 
 i_fun_clause(R0, I0) ->
     R1 = i_comments(R0, I0),

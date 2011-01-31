@@ -22,6 +22,7 @@ import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.jinterface.backend.Backend;
+import org.erlide.jinterface.backend.util.PreferencesUtils;
 import org.erlide.jinterface.backend.util.Util;
 
 import com.ericsson.otp.erlang.OtpErlangList;
@@ -57,10 +58,11 @@ public class DialyzerUtils {
             final DialyzerPreferences prefs) throws InvocationTargetException {
         final boolean fromSource = prefs.getFromSource();
         final Set<IErlProject> keySet = modules.keySet();
-        final String pltPath = prefs.getPltPath();
+        final List<String> pltPaths = PreferencesUtils.unpackList(prefs
+                .getPltPath());
         for (final IErlProject p : keySet) {
             final IProject project = p.getProject();
-            MarkerUtils.removeDialyzerWarningMarkers(project);
+            MarkerUtils.removeDialyzerMarkers(project);
             try {
                 final Backend backend = ErlangCore.getBackendManager()
                         .getBuildBackend(project);
@@ -71,7 +73,7 @@ public class DialyzerUtils {
                         includeDirs, fromSource);
                 monitor.subTask("Dialyzing " + getFileNames(names));
                 final OtpErlangObject result = ErlideDialyze.dialyze(backend,
-                        files, pltPath, includeDirs, fromSource);
+                        files, pltPaths, includeDirs, fromSource);
                 checkDialyzeError(result);
                 MarkerUtils.addDialyzerWarningMarkersFromResultList(p, backend,
                         (OtpErlangList) result);
@@ -148,13 +150,16 @@ public class DialyzerUtils {
         if (e instanceof IErlFolder) {
             final IErlFolder f = (IErlFolder) e;
             f.open(null);
-            final IErlProject p = f.getErlProject();
-            Set<IErlModule> ms = modules.get(p);
-            if (ms == null) {
-                ms = new HashSet<IErlModule>();
+            final Collection<IErlModule> folderModules = f.getModules();
+            if (!folderModules.isEmpty()) {
+                final IErlProject p = f.getErlProject();
+                Set<IErlModule> ms = modules.get(p);
+                if (ms == null) {
+                    ms = new HashSet<IErlModule>();
+                }
+                ms.addAll(folderModules);
+                modules.put(p, ms);
             }
-            ms.addAll(f.getModules());
-            modules.put(p, ms);
         } else if (e instanceof IErlModule) {
             final IErlModule m = (IErlModule) e;
             final IErlProject p = m.getErlProject();

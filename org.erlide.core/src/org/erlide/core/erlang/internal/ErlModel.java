@@ -400,6 +400,9 @@ public class ErlModel extends Openable implements IErlModel {
 
     public IErlElement findElement(final IResource rsrc,
             final boolean openElements) {
+        if (rsrc == null) {
+            return null;
+        }
         final IPath path = rsrc.getFullPath();
         IParent p = this;
         for (final String segment : path.segments()) {
@@ -457,6 +460,11 @@ public class ErlModel extends Openable implements IErlModel {
             // Ok, if it's not found, we'll try to build it...
             element = findElement(file, true);
         }
+        // if (element == null) {
+        // final String path = file.getLocation().toPortableString();
+        // element = ErlangCore.getModelManager().getModuleFromFile(this,
+        // file.getName(), null, path, path);
+        // }
         return (IErlModule) element;
     }
 
@@ -550,8 +558,7 @@ public class ErlModel extends Openable implements IErlModel {
 
     public final void accept(final IErlElement element,
             final IErlElementVisitor visitor, final int flags,
-            final IErlElement.Kind leafKind, final boolean open)
-            throws ErlModelException {
+            final IErlElement.Kind leafKind) throws ErlModelException {
         if (element.getKind() == leafKind) {
             visitor.visit(element);
         } else {
@@ -559,40 +566,34 @@ public class ErlModel extends Openable implements IErlModel {
             if ((flags & IErlElement.VISIT_LEAFS_ONLY) == 0) {
                 visitChildren = visitor.visit(element);
             }
-            if (open) {
-                if (element instanceof IOpenable) {
-                    final IOpenable openable = (IOpenable) element;
-                    openable.open(null);
-                }
-            }
             if (visitChildren && element instanceof IParent) {
                 final IParent parent = (IParent) element;
                 for (final IErlElement child : parent.getChildren()) {
-                    accept(child, visitor, flags, leafKind, open);
+                    accept(child, visitor, flags, leafKind);
                 }
-                if (parent instanceof IErlProject) {
-                    final IErlProject project = (IErlProject) parent;
-                    if ((flags & IErlElement.VISIT_REFERENCED) != 0) {
-                        final IProject p = project.getProject();
-                        try {
-                            for (final IProject referenced : p
-                                    .getReferencedProjects()) {
-                                final IErlElement e = findElement(referenced);
-                                if (e instanceof IErlProject) {
-                                    final IErlProject ep = (IErlProject) e;
-                                    accept(ep, visitor, flags
-                                            & ~IErlElement.VISIT_REFERENCED,
-                                            leafKind, open);
-                                }
-                            }
-                        } catch (final CoreException e) {
-                            ErlLogger.warn(e);
-                        }
-                    }
-                    if ((flags & IErlElement.VISIT_EXTERNALS) != 0) {
-                        // FIXME how do we do that?
-                    }
-                }
+                // if (parent instanceof IErlProject) {
+                // final IErlProject project = (IErlProject) parent;
+                // if ((flags & IErlElement.VISIT_REFERENCED) != 0) {
+                // final IProject p = project.getProject();
+                // try {
+                // for (final IProject referenced : p
+                // .getReferencedProjects()) {
+                // final IErlElement e = findElement(referenced);
+                // if (e instanceof IErlProject) {
+                // final IErlProject ep = (IErlProject) e;
+                // accept(ep, visitor, flags
+                // & ~IErlElement.VISIT_REFERENCED,
+                // leafKind);
+                // }
+                // }
+                // } catch (final CoreException e) {
+                // ErlLogger.warn(e);
+                // }
+                // }
+                // if ((flags & IErlElement.VISIT_EXTERNALS) != 0) {
+                // // FIXME how do we do that?
+                // }
+                // }
             }
         }
     }
@@ -661,13 +662,6 @@ public class ErlModel extends Openable implements IErlModel {
         } catch (final ErlModelException e) {
         }
         return null;
-    }
-
-    public IErlModule getModuleFor(IErlElement elem) {
-        while (elem != null && !(elem instanceof IErlModule)) {
-            elem = elem.getParent();
-        }
-        return (IErlModule) elem;
     }
 
     public IErlModule findModuleExt(final String name) {

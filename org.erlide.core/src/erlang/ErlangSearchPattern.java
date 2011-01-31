@@ -1,5 +1,7 @@
 package erlang;
 
+import java.util.EnumSet;
+
 import org.erlide.core.erlang.IErlAttribute;
 import org.erlide.core.erlang.IErlElement;
 import org.erlide.core.erlang.IErlFunction;
@@ -10,6 +12,7 @@ import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.core.search.FunctionPattern;
 import org.erlide.core.search.IncludePattern;
 import org.erlide.core.search.MacroPattern;
+import org.erlide.core.search.RecordFieldPattern;
 import org.erlide.core.search.RecordPattern;
 import org.erlide.core.search.TypeRefPattern;
 import org.erlide.jinterface.backend.util.Util;
@@ -51,16 +54,24 @@ public abstract class ErlangSearchPattern {
             "var_def");
     protected static final OtpErlangAtom VARIABLE_REF_ATOM = new OtpErlangAtom(
             "var_ref");
+    protected static final OtpErlangAtom RECORD_FIELD_DEF_ATOM = new OtpErlangAtom(
+            "record_field_def");
+    protected static final OtpErlangAtom RECORD_FIELD_REF_ATOM = new OtpErlangAtom(
+            "record_field_ref");
 
     // search for
     public enum SearchFor {
-        FUNCTION, MACRO, RECORD, INCLUDE, TYPE, VARIABLE
+        FUNCTION, MACRO, RECORD, INCLUDE, TYPE, VARIABLE, RECORD_FIELD;
     };
+
+    public EnumSet<SearchFor> allSearchFor = EnumSet.allOf(SearchFor.class);
 
     // limit to
     public enum LimitTo {
         REFERENCES, DEFINITIONS, ALL_OCCURRENCES
     };
+
+    public EnumSet<LimitTo> allLimitTo = EnumSet.allOf(LimitTo.class);
 
     protected final LimitTo limitTo;
 
@@ -78,6 +89,8 @@ public abstract class ErlangSearchPattern {
             return new RecordPattern(name, limitTo);
         case TYPE:
             return new TypeRefPattern(module, name, limitTo);
+        case RECORD_FIELD:
+            return new RecordFieldPattern(module, name, limitTo);
         case VARIABLE:
             return null; // FIXME
         }
@@ -204,7 +217,7 @@ public abstract class ErlangSearchPattern {
         if (element instanceof IErlFunction) {
             final IErlFunction function = (IErlFunction) element;
             final String withoutExtension = ErlideUtil
-                    .withoutExtension(function.getModule().getName());
+                    .withoutExtension(function.getModuleName());
             return new FunctionPattern(withoutExtension,
                     function.getFunctionName(), function.getArity(), limitTo,
                     true);
@@ -218,8 +231,8 @@ public abstract class ErlangSearchPattern {
             return new RecordPattern(unquoted, limitTo);
         } else if (element instanceof IErlFunctionClause) {
             final IErlFunctionClause clause = (IErlFunctionClause) element;
-            return getSearchPatternFromErlElementAndLimitTo(clause.getParent(),
-                    limitTo);
+            return getSearchPatternFromErlElementAndLimitTo(
+                    (IErlElement) clause.getParent(), limitTo);
         } else if (element instanceof IErlAttribute) {
             final IErlAttribute a = (IErlAttribute) element;
             if (a.getName().startsWith("include")) {

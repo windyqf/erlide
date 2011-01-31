@@ -13,7 +13,7 @@ public class ErlProjectInfo {
     private final RuntimeVersion requiredRuntimeVersion;
     private final ErlProjectLayout layout;
 
-    private final Set<PathEntry> codePathEntries = Sets.newHashSet();
+    // private final Set<PathEntry> codePathEntries = Sets.newHashSet();
 
     private final Set<PathEntry> dependencies = Sets.newHashSet();
 
@@ -21,12 +21,13 @@ public class ErlProjectInfo {
         this(ErlProjectLayout.OTP_LAYOUT);
     }
 
-    public ErlProjectInfo(ErlProjectLayout layout) {
+    public ErlProjectInfo(final ErlProjectLayout layout) {
         this(new RuntimeVersion("R14B"), layout);
     }
 
-    public ErlProjectInfo(RuntimeVersion version, ErlProjectLayout layout) {
-        this.requiredRuntimeVersion = version;
+    public ErlProjectInfo(final RuntimeVersion version,
+            final ErlProjectLayout layout) {
+        requiredRuntimeVersion = version;
         this.layout = layout;
     }
 
@@ -42,26 +43,27 @@ public class ErlProjectInfo {
         return layout;
     }
 
-    public ErlProjectInfo addDependencies(Collection<PathEntry> locations) {
-        Collection<PathEntry> dependencies = getDependencies();
-        for (PathEntry loc : locations) {
-            if (!dependencies.contains(loc)) {
-                dependencies.add(loc);
+    public ErlProjectInfo addDependencies(final Collection<PathEntry> locations) {
+        final Collection<PathEntry> theDependencies = getDependencies();
+        for (final PathEntry loc : locations) {
+            if (!theDependencies.contains(loc)) {
+                theDependencies.add(loc);
             }
         }
         return new ErlProjectInfo(/* dependencies */);
     }
 
-    public ErlProjectInfo removeDependencies(Collection<PathEntry> locations) {
-        Collection<PathEntry> dependencies = getDependencies();
-        for (PathEntry loc : locations) {
-            dependencies.remove(loc);
+    public ErlProjectInfo removeDependencies(
+            final Collection<PathEntry> locations) {
+        final Collection<PathEntry> theDependencies = getDependencies();
+        for (final PathEntry loc : locations) {
+            theDependencies.remove(loc);
         }
         return new ErlProjectInfo(/* dependencies */);
     }
 
     public ErlProjectInfo setRequiredRuntimeVersion(
-            RuntimeVersion runtimeVersion) {
+            final RuntimeVersion runtimeVersion) {
         return new ErlProjectInfo(/* runtimeVersion */);
     }
 

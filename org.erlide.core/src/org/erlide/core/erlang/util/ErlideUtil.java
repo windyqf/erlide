@@ -28,9 +28,9 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 
+import org.eclipse.core.internal.runtime.Activator;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IContributor;
@@ -39,6 +39,8 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.RegistryFactory;
+import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.osgi.framework.internal.core.BundleURLConnection;
 import org.erlide.core.ErlangPlugin;
 import org.erlide.core.erlang.ErlModelException;
@@ -58,6 +60,7 @@ import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangRangeException;
 import com.ericsson.otp.erlang.OtpErlangTuple;
+import com.google.common.collect.Lists;
 
 public final class ErlideUtil {
 
@@ -197,26 +200,49 @@ public final class ErlideUtil {
     }
 
     @SuppressWarnings("restriction")
-    public static String getPath(final String name, final Bundle b) {
-        final URL entry = b.getEntry(name.replace(" ", "%20"));
+    public static Collection<String> getPaths(final String name, final Bundle b) {
+        final List<String> result = Lists.newArrayList();
+        final String entryName = name.replace(" ", "%20");
+        URL entry = b.getEntry(entryName);
         if (entry != null) {
-            final String file = entry.getFile();
-            URLConnection connection;
-            try {
-                connection = entry.openConnection();
-                if (connection instanceof BundleURLConnection) {
-                    final URL fileURL = ((BundleURLConnection) connection)
-                            .getFileURL();
-                    final URI uri = new URI(fileURL.toString().replace(" ",
-                            "%20"));
-                    final String path = new File(uri).getAbsolutePath();
-                    return path;
-                }
-            } catch (final IOException e) {
-                ErlLogger.warn(e.getMessage());
-            } catch (final URISyntaxException e) {
-                ErlLogger.warn(e.getMessage());
+            final String aPath = getPathFromUrl(entry);
+            if (aPath != null) {
+                result.add(aPath);
             }
+        }
+
+        final Activator activator = Activator.getDefault();
+        if (activator != null) {
+            final Bundle[] fragments = activator.getFragments(b);
+            if (fragments != null) {
+                for (int i = 0; i < fragments.length; i++) {
+                    entry = fragments[i].getEntry(entryName);
+                    if (entry != null) {
+                        final String aPath = getPathFromUrl(entry);
+                        result.add(aPath);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @SuppressWarnings("restriction")
+    private static String getPathFromUrl(final URL entry) {
+        URLConnection connection;
+        try {
+            connection = entry.openConnection();
+            if (connection instanceof BundleURLConnection) {
+                final URL fileURL = ((BundleURLConnection) connection)
+                        .getFileURL();
+                final URI uri = new URI(fileURL.toString().replace(" ", "%20"));
+                final String path = new File(uri).getAbsolutePath();
+                return path;
+            }
+        } catch (final IOException e) {
+            ErlLogger.warn(e.getMessage());
+        } catch (final URISyntaxException e) {
+            ErlLogger.warn(e.getMessage());
         }
         return null;
     }
@@ -248,7 +274,7 @@ public final class ErlideUtil {
         return isEricssonUser;
     }
 
-    public static boolean isModuleExtension(final String ext) {
+    public static boolean isModuleExtensionx(final String ext) {
         return extensionToModuleKind(ext) != ModuleKind.BAD;
     }
 
@@ -274,7 +300,7 @@ public final class ErlideUtil {
     }
 
     public static boolean hasModuleExtension(final String name) {
-        return nameToModuleKind(name) != ModuleKind.BAD;
+        return nameToModuleKind(name) != ModuleKind.BAD || true;
     }
 
     public static boolean hasExtension(final String name) {
@@ -358,7 +384,6 @@ public final class ErlideUtil {
             }
         }
         final File dir = new File(s);
-        // TODO this takes a few seconds if windows share doesn't exist - fix!
         if (!dir.exists()) {
             s = System.getProperty("user.home");
         }
@@ -371,11 +396,7 @@ public final class ErlideUtil {
 
     public static String fetchErlideLog() {
         final StringBuffer result = new StringBuffer();
-        String dir = ResourcesPlugin.getWorkspace().getRoot().getLocation()
-                .toPortableString();
-        dir = dir == null ? "c:/" : dir;
-        final File log = new File(dir + "_erlide.log");
-
+        final File log = new File(ErlLogger.getInstance().getLogLocation());
         try {
             final BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new FileInputStream(log), "UTF-8"));
@@ -495,5 +516,25 @@ public final class ErlideUtil {
     }
 
     private ErlideUtil() {
+    }
+
+    public static boolean isErlangFileContentFileName(final String fileName) {
+        final IContentTypeManager contentTypeManager = Platform
+                .getContentTypeManager();
+        final IContentType[] contentTypes = contentTypeManager
+                .findContentTypesFor(fileName);
+        for (final IContentType contentType : contentTypes) {
+            if (contentType.getId().equals("org.erlide.core.content.erlang")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static String withoutInterrogationMark(final String definedName) {
+        if (definedName.startsWith("?")) {
+            return definedName.substring(1);
+        }
+        return definedName;
     }
 }

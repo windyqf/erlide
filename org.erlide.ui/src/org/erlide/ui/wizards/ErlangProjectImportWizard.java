@@ -56,264 +56,266 @@ import org.erlide.ui.perspectives.ErlangPerspective;
 import erlang.ErlideImport;
 
 public class ErlangProjectImportWizard extends Wizard implements INewWizard { // IImportWizard
-	// {
-	private IStructuredSelection selection;
-	private ErlangProjectImportWizardPage mainPage;
-	private ErlangProjectImportIncludeAndSourceDirsWizardPage importIncludeAndSourceDirsPage;
-	private Collection<String> resources;
+    // {
+    private IStructuredSelection selection;
+    private ErlangProjectImportWizardPage mainPage;
+    private ErlangProjectImportIncludeAndSourceDirsWizardPage importIncludeAndSourceDirsPage;
+    private Collection<String> resources;
 
-	// WizardFileSystemResourceImportPage1 mainPage;
+    public static boolean COPY_ONLY = true;
 
-	@SuppressWarnings("deprecation")
-	public ErlangProjectImportWizard() {
-		final AbstractUIPlugin plugin = (AbstractUIPlugin) Platform
-				.getPlugin(PlatformUI.PLUGIN_ID);
-		final IDialogSettings workbenchSettings = plugin.getDialogSettings();
-		IDialogSettings section = workbenchSettings
-				.getSection("FileSystemImportWizard");//$NON-NLS-1$
-		if (section == null) {
-			section = workbenchSettings.addNewSection("FileSystemImportWizard");//$NON-NLS-1$
-		}
-		setDialogSettings(section);
-		// super();
+    // WizardFileSystemResourceImportPage1 mainPage;
 
-	}
+    @SuppressWarnings("deprecation")
+    public ErlangProjectImportWizard() {
+        final AbstractUIPlugin plugin = (AbstractUIPlugin) Platform
+                .getPlugin(PlatformUI.PLUGIN_ID);
+        final IDialogSettings workbenchSettings = plugin.getDialogSettings();
+        IDialogSettings section = workbenchSettings
+                .getSection("FileSystemImportWizard");//$NON-NLS-1$
+        if (section == null) {
+            section = workbenchSettings.addNewSection("FileSystemImportWizard");//$NON-NLS-1$
+        }
+        setDialogSettings(section);
+        // super();
 
-	public void setupIncludeAndSourceDirsPage() {
-		final List<?> selectedResources = mainPage.getSelectedResources();
-		final List<String> filesAndDirs = new ArrayList<String>(
-				selectedResources.size());
-		final FileSystemStructureProvider provider = FileSystemStructureProvider.INSTANCE;
-		for (final Object o : selectedResources) {
-			final FileSystemElement fse = (FileSystemElement) o;
-			final Object fso = fse.getFileSystemObject();
-			final String s = provider.getFullPath(fso);
-			filesAndDirs.add(s);
-		}
-		final String projectPath = mainPage.getProjectPath().toString();
-		final ErlProjectImport epi = ErlideImport
-				.importProject(ErlangCore.getBackendManager().getIdeBackend(),
-						projectPath, filesAndDirs);
-		importIncludeAndSourceDirsPage.setup(projectPath, epi.getDirectories(),
-				epi.getIncludeDirs(), epi.getSourceDirs());
-		resources = epi.getResources();
-		final List<Object> fileSystemObjects = new ArrayList<Object>();
-		for (final Object o : selectedResources) {
-			final FileSystemElement fse = (FileSystemElement) o;
-			final Object fso = fse.getFileSystemObject();
-			final String s = provider.getFullPath(fso);
-			if (epi.getResources().contains(s)) {
-				fileSystemObjects.add(((FileSystemElement) o)
-						.getFileSystemObject());
-			}
-		}
-	}
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.jface.wizard.Wizard#performFinish()
-	 */
-	@Override
-	public boolean performFinish() {
-		if (!validateFinish()) {
-			return false;
-		}
-		if (resources == null) {
-			setupIncludeAndSourceDirsPage();
-		}
-		final List<?> selectedResources = mainPage.getSelectedResources();
-		final List<String> filesAndDirs = new ArrayList<String>(
-				selectedResources.size());
-		final FileSystemStructureProvider provider = FileSystemStructureProvider.INSTANCE;
-		for (final Object o : selectedResources) {
-			final FileSystemElement fse = (FileSystemElement) o;
-			final Object fso = fse.getFileSystemObject();
-			final String s = provider.getFullPath(fso);
-			filesAndDirs.add(s);
-		}
-		final String projectPath = mainPage.getProjectPath().toString();
-		final List<Object> fileSystemObjects = new ArrayList<Object>();
-		for (final Object o : selectedResources) {
-			final FileSystemElement fse = (FileSystemElement) o;
-			final Object fso = fse.getFileSystemObject();
-			final String s = provider.getFullPath(fso);
-			if (resources.contains(s)) {
-				fileSystemObjects.add(((FileSystemElement) o)
-						.getFileSystemObject());
-			}
-		}
-		try {
-			getContainer().run(false, true, new WorkspaceModifyOperation() {
+    public void setupIncludeAndSourceDirsPage() {
+        final List<?> selectedResources = mainPage.getSelectedResources();
+        final List<String> filesAndDirs = new ArrayList<String>(
+                selectedResources.size());
+        final FileSystemStructureProvider provider = FileSystemStructureProvider.INSTANCE;
+        for (final Object o : selectedResources) {
+            final FileSystemElement fse = (FileSystemElement) o;
+            final Object fso = fse.getFileSystemObject();
+            final String s = provider.getFullPath(fso);
+            filesAndDirs.add(s);
+        }
+        final String projectPath = mainPage.getProjectPath().toString();
+        final ErlProjectImport epi = ErlideImport
+                .importProject(ErlangCore.getBackendManager().getIdeBackend(),
+                        projectPath, filesAndDirs);
+        importIncludeAndSourceDirsPage.setup(projectPath, epi.getDirectories(),
+                epi.getIncludeDirs(), epi.getSourceDirs());
+        resources = epi.getResources();
+        final List<Object> fileSystemObjects = new ArrayList<Object>();
+        for (final Object o : selectedResources) {
+            final FileSystemElement fse = (FileSystemElement) o;
+            final Object fso = fse.getFileSystemObject();
+            final String s = provider.getFullPath(fso);
+            if (epi.getResources().contains(s)) {
+                fileSystemObjects.add(((FileSystemElement) o)
+                        .getFileSystemObject());
+            }
+        }
+    }
 
-				@Override
-				protected void execute(IProgressMonitor monitor) {
-					if (monitor == null) {
-						monitor = new NullProgressMonitor();
-					}
-					createProject(monitor, importIncludeAndSourceDirsPage
-							.getIncludeDirs(), importIncludeAndSourceDirsPage
-							.getSourceDirs());
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.jface.wizard.Wizard#performFinish()
+     */
+    @Override
+    public boolean performFinish() {
+        if (!validateFinish()) {
+            return false;
+        }
+        if (resources == null) {
+            setupIncludeAndSourceDirsPage();
+        }
+        final List<?> selectedResources = mainPage.getSelectedResources();
+        final List<String> filesAndDirs = new ArrayList<String>(
+                selectedResources.size());
+        final FileSystemStructureProvider provider = FileSystemStructureProvider.INSTANCE;
+        for (final Object o : selectedResources) {
+            final FileSystemElement fse = (FileSystemElement) o;
+            final Object fso = fse.getFileSystemObject();
+            final String s = provider.getFullPath(fso);
+            filesAndDirs.add(s);
+        }
+        final String projectPath = mainPage.getProjectPath().toString();
+        final List<Object> fileSystemObjects = new ArrayList<Object>();
+        for (final Object o : selectedResources) {
+            final FileSystemElement fse = (FileSystemElement) o;
+            final Object fso = fse.getFileSystemObject();
+            final String s = provider.getFullPath(fso);
+            if (resources.contains(s)) {
+                fileSystemObjects.add(((FileSystemElement) o)
+                        .getFileSystemObject());
+            }
+        }
+        try {
+            getContainer().run(false, true, new WorkspaceModifyOperation() {
 
-					try {
-						final IWorkbench wbench = ErlideUIPlugin.getDefault()
-								.getWorkbench();
-						wbench.showPerspective(ErlangPerspective.ID, wbench
-								.getActiveWorkbenchWindow());
-					} catch (final WorkbenchException we) {
-						// ignore
-					}
-				}
-			});
+                @Override
+                protected void execute(IProgressMonitor monitor) {
+                    if (monitor == null) {
+                        monitor = new NullProgressMonitor();
+                    }
+                    createProject(monitor,
+                            importIncludeAndSourceDirsPage.getIncludeDirs(),
+                            importIncludeAndSourceDirsPage.getSourceDirs());
 
-		} catch (final Exception x) {
-			reportError(x);
-			return false;
-		}
-		return mainPage.finish(projectPath, fileSystemObjects);
-	}
+                    try {
+                        final IWorkbench wbench = ErlideUIPlugin.getDefault()
+                                .getWorkbench();
+                        wbench.showPerspective(ErlangPerspective.ID,
+                                wbench.getActiveWorkbenchWindow());
+                    } catch (final WorkbenchException we) {
+                        // ignore
+                    }
+                }
+            });
 
-	/**
-	 * Validate finish
-	 * 
-	 * @return
-	 */
-	private boolean validateFinish() {
+        } catch (final Exception x) {
+            reportError(x);
+            return false;
+        }
+        return mainPage.finish(projectPath, fileSystemObjects);
+    }
 
-		return true;
-	}
+    /**
+     * Validate finish
+     * 
+     * @return
+     */
+    private boolean validateFinish() {
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.IWorkbenchWizard#init(org.eclipse.ui.IWorkbench,
-	 * org.eclipse.jface.viewers.IStructuredSelection)
-	 */
-	public void init(final IWorkbench aWorkbench,
-			final IStructuredSelection aSelection) {
-		selection = aSelection;
+        return true;
+    }
 
-		final List<?> selectedResources = IDE
-				.computeSelectedResources(aSelection);
-		if (!selectedResources.isEmpty()) {
-			selection = new StructuredSelection(selectedResources);
-		}
-		setWindowTitle("Erlang Project Import Wizard"); // NON-NLS-1
-		setNeedsProgressMonitor(true);
-		// mainPage = new ErlangProjectImportWizardPage("Import Erlang Project",
-		// selection); // NON-NLS-1
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.ui.IWorkbenchWizard#init(org.eclipse.ui.IWorkbench,
+     * org.eclipse.jface.viewers.IStructuredSelection)
+     */
+    public void init(final IWorkbench aWorkbench,
+            final IStructuredSelection aSelection) {
+        selection = aSelection;
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.jface.wizard.IWizard#addPages()
-	 */
-	@Override
-	public void addPages() {
-		super.addPages();
-		mainPage = new ErlangProjectImportWizardPage(selection);
-		addPage(mainPage);
-		importIncludeAndSourceDirsPage = new ErlangProjectImportIncludeAndSourceDirsWizardPage();
-		addPage(importIncludeAndSourceDirsPage);
-	}
+        final List<?> selectedResources = IDE
+                .computeSelectedResources(aSelection);
+        if (!selectedResources.isEmpty()) {
+            selection = new StructuredSelection(selectedResources);
+        }
+        setWindowTitle("Erlang Project Import Wizard"); // NON-NLS-1
+        setNeedsProgressMonitor(true);
+        // mainPage = new ErlangProjectImportWizardPage("Import Erlang Project",
+        // selection); // NON-NLS-1
+    }
 
-	@Override
-	public void setContainer(final IWizardContainer wizardContainer) {
-		if (wizardContainer instanceof IPageChangeProvider) {
-			final IPageChangeProvider pcp = (IPageChangeProvider) wizardContainer;
-			pcp.addPageChangedListener(new IPageChangedListener() {
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.jface.wizard.IWizard#addPages()
+     */
+    @Override
+    public void addPages() {
+        super.addPages();
+        mainPage = new ErlangProjectImportWizardPage(selection);
+        addPage(mainPage);
+        importIncludeAndSourceDirsPage = new ErlangProjectImportIncludeAndSourceDirsWizardPage();
+        addPage(importIncludeAndSourceDirsPage);
+    }
 
-				public void pageChanged(final PageChangedEvent event) {
-					if (event.getSelectedPage() == importIncludeAndSourceDirsPage) {
-						setupIncludeAndSourceDirsPage();
-					}
-				}
-			});
-		}
-		super.setContainer(wizardContainer);
-	}
+    @Override
+    public void setContainer(final IWizardContainer wizardContainer) {
+        if (wizardContainer instanceof IPageChangeProvider) {
+            final IPageChangeProvider pcp = (IPageChangeProvider) wizardContainer;
+            pcp.addPageChangedListener(new IPageChangedListener() {
 
-	/**
-	 * Displays an error that occured during the project creation. *
-	 * 
-	 * @param x
-	 *            details on the error
-	 */
-	private void reportError(final Exception x) {
-		ErlLogger.error(x);
-		ErrorDialog.openError(getShell(), ErlideUIPlugin
-				.getResourceString("wizards.errors.projecterrordesc"),
-				ErlideUIPlugin
-						.getResourceString("wizards.errors.projecterrortitle"),
-				PluginUtils.makeStatus(x));
-	}
+                public void pageChanged(final PageChangedEvent event) {
+                    if (event.getSelectedPage() == importIncludeAndSourceDirsPage) {
+                        setupIncludeAndSourceDirsPage();
+                    }
+                }
+            });
+        }
+        super.setContainer(wizardContainer);
+    }
 
-	/**
-	 * This is the actual implementation for project creation.
-	 * 
-	 * @param monitor
-	 *            reports progress on this object
-	 */
-	protected void createProject(final IProgressMonitor monitor,
-			final Collection<IPath> includeDirs,
-			final Collection<IPath> sourceDirs) {
-		monitor.beginTask(ErlideUIPlugin
-				.getResourceString("wizards.messages.creatingproject"), 50);
-		try {
-			final IWorkspaceRoot root = ResourcesPlugin.getWorkspace()
-					.getRoot();
-			monitor.subTask(ErlideUIPlugin
-					.getResourceString("wizards.messages.creatingdirectories"));
-			final IProject project = root.getProject(mainPage.getProjectName());
-			IProjectDescription description = ResourcesPlugin.getWorkspace()
-					.newProjectDescription(project.getName());
-			if (!Platform.getLocation().equals(mainPage.getLocationPath())) {
-				description.setLocation(mainPage.getLocationPath());
-			}
-			project.create(description, monitor);
-			monitor.worked(10);
-			project.open(monitor);
+    /**
+     * Displays an error that occured during the project creation. *
+     * 
+     * @param x
+     *            details on the error
+     */
+    private void reportError(final Exception x) {
+        ErlLogger.error(x);
+        ErrorDialog.openError(getShell(), ErlideUIPlugin
+                .getResourceString("wizards.errors.projecterrordesc"),
+                ErlideUIPlugin
+                        .getResourceString("wizards.errors.projecterrortitle"),
+                PluginUtils.makeStatus(x));
+    }
 
-			description = project.getDescription();
+    /**
+     * This is the actual implementation for project creation.
+     * 
+     * @param monitor
+     *            reports progress on this object
+     */
+    protected void createProject(final IProgressMonitor monitor,
+            final Collection<IPath> includeDirs,
+            final Collection<IPath> sourceDirs) {
+        monitor.beginTask(ErlideUIPlugin
+                .getResourceString("wizards.messages.creatingproject"), 50);
+        try {
+            final IWorkspaceRoot root = ResourcesPlugin.getWorkspace()
+                    .getRoot();
+            monitor.subTask(ErlideUIPlugin
+                    .getResourceString("wizards.messages.creatingdirectories"));
+            final IProject project = root.getProject(mainPage.getProjectName());
+            IProjectDescription description = ResourcesPlugin.getWorkspace()
+                    .newProjectDescription(project.getName());
+            if (!Platform.getLocation().equals(mainPage.getLocationPath())) {
+                description.setLocation(mainPage.getLocationPath());
+            }
+            project.create(description, monitor);
+            monitor.worked(10);
+            project.open(monitor);
 
-			description.setNatureIds(new String[] { ErlangPlugin.NATURE_ID });
-			project.setDescription(description, new SubProgressMonitor(monitor,
-					10));
+            description = project.getDescription();
 
-			monitor.worked(10);
-			monitor.subTask(ErlideUIPlugin
-					.getResourceString("wizards.messages.creatingfiles"));
+            description.setNatureIds(new String[] { ErlangPlugin.NATURE_ID });
+            project.setDescription(description, new SubProgressMonitor(monitor,
+                    10));
 
-			// final OldErlangProjectProperties bprefs = buildPage.getPrefs();
+            monitor.worked(10);
+            monitor.subTask(ErlideUIPlugin
+                    .getResourceString("wizards.messages.creatingfiles"));
 
-			// buildPaths(monitor, root, project);
-			// buildPaths(monitor, root, project);
-			// buildPaths(monitor, root, project);
+            // final OldErlangProjectProperties bprefs = buildPage.getPrefs();
 
-			final IOldErlangProjectProperties prefs = ErlangCore
-					.getProjectProperties(project);
+            // buildPaths(monitor, root, project);
+            // buildPaths(monitor, root, project);
+            // buildPaths(monitor, root, project);
 
-			// String[] directories = findErlDirectories();
-			// prefs.setSourceDirs(directories);
-			// monitor.worked(10);
-			// directories = findHrlDirectories();
-			// prefs.setIncludeDirs(directories);
-			// prefs.copyFrom(bprefs);
-			prefs.setIncludeDirs(includeDirs);
-			prefs.setSourceDirs(sourceDirs);
-			final IEclipsePreferences node = new ProjectScope(project)
-					.getNode(ErlangPlugin.PLUGIN_ID);
-			prefs.store(node);
+            final IOldErlangProjectProperties prefs = ErlangCore
+                    .getProjectProperties(project);
 
-			// TODO add code path to backend
-			// final String out = project.getLocation().append(
-			// prefs.getOutputDir()).toString();
-		} catch (final CoreException x) {
-			x.printStackTrace();
-			reportError(x);
-		} finally {
-			monitor.done();
-		}
-	}
+            // String[] directories = findErlDirectories();
+            // prefs.setSourceDirs(directories);
+            // monitor.worked(10);
+            // directories = findHrlDirectories();
+            // prefs.setIncludeDirs(directories);
+            // prefs.copyFrom(bprefs);
+            prefs.setIncludeDirs(includeDirs);
+            prefs.setSourceDirs(sourceDirs);
+            final IEclipsePreferences node = new ProjectScope(project)
+                    .getNode(ErlangPlugin.PLUGIN_ID);
+            prefs.store(node);
+
+            // TODO add code path to backend
+            // final String out = project.getLocation().append(
+            // prefs.getOutputDir()).toString();
+        } catch (final CoreException x) {
+            x.printStackTrace();
+            reportError(x);
+        } finally {
+            monitor.done();
+        }
+    }
 }

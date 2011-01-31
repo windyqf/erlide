@@ -35,6 +35,8 @@ import org.erlide.core.erlang.IErlElement;
 import org.erlide.core.erlang.IErlFunctionClause;
 import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlPreprocessorDef;
+import org.erlide.core.erlang.util.ModelUtils;
+import org.erlide.core.search.ErlSearchScope;
 import org.erlide.core.text.ErlangToolkit;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.BackendException;
@@ -42,7 +44,9 @@ import org.erlide.jinterface.util.ErlLogger;
 import org.erlide.ui.actions.SelectionDispatchAction;
 import org.erlide.ui.editors.erl.ErlangEditor;
 import org.erlide.ui.internal.ExceptionHandler;
-import org.erlide.ui.util.ErlModelUtils;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import erlang.ErlangSearchPattern;
 import erlang.ErlangSearchPattern.LimitTo;
@@ -206,17 +210,11 @@ public abstract class FindAction extends SelectionDispatchAction {
      */
     @Override
     public void run(final ITextSelection selection) {
-        performNewSearch(selection, getScope());
-    }
-
-    protected void performNewSearch(final ITextSelection selection,
-            final Collection<IResource> scope) {
         performNewSearch(selection, getScope(), getExternalScope());
     }
 
     protected void performNewSearch(final ITextSelection selection,
-            final Collection<IResource> scope,
-            final Collection<IErlModule> externalScope) {
+            final ErlSearchScope scope, final ErlSearchScope externalScope) {
         // if (!ActionUtil.isProcessable(fEditor)) {
         // return;
         // }
@@ -232,7 +230,7 @@ public abstract class FindAction extends SelectionDispatchAction {
                 .createScannerModuleName(module);
         OpenResult res;
         try {
-            res = ErlideOpen.open(b, scannerModuleName, offset, ErlModelUtils
+            res = ErlideOpen.open(b, scannerModuleName, offset, ModelUtils
                     .getImportsAsList(module), "", ErlangCore.getModel()
                     .getPathVars());
             ErlLogger.debug("find " + res);
@@ -251,9 +249,9 @@ public abstract class FindAction extends SelectionDispatchAction {
 
     abstract LimitTo getLimitTo();
 
-    abstract protected Collection<IResource> getScope();
+    abstract protected ErlSearchScope getScope();
 
-    abstract protected Collection<IErlModule> getExternalScope();
+    abstract protected ErlSearchScope getExternalScope();
 
     abstract protected String getScopeDescription();
 
@@ -284,8 +282,7 @@ public abstract class FindAction extends SelectionDispatchAction {
     }
 
     protected void performNewSearch(final IErlElement element,
-            final Collection<IResource> scope,
-            final Collection<IErlModule> externalScope) {
+            final ErlSearchScope scope, final ErlSearchScope externalScope) {
         final ErlangSearchPattern pattern = ErlangSearchPattern
                 .getSearchPatternFromErlElementAndLimitTo(element, getLimitTo());
         SearchUtil.runQuery(pattern, scope, externalScope,
@@ -293,8 +290,7 @@ public abstract class FindAction extends SelectionDispatchAction {
     }
 
     private void performNewSearch(final ErlangSearchPattern ref,
-            final Collection<IResource> scope,
-            final Collection<IErlModule> externalScope) {
+            final ErlSearchScope scope, final ErlSearchScope externalScope) {
         final ErlSearchQuery query = new ErlSearchQuery(ref, scope,
                 externalScope, getScopeDescription());
         if (query.canRunInBackground()) {
@@ -333,7 +329,8 @@ public abstract class FindAction extends SelectionDispatchAction {
         return fEditor;
     }
 
-    protected Collection<IResource> getProjectScope() {
+    protected Collection<IProject> getProjects() {
+
         final TextEditor editor = getEditor();
         if (editor != null) {
             final IEditorInput editorInput = editor.getEditorInput();
@@ -341,7 +338,7 @@ public abstract class FindAction extends SelectionDispatchAction {
                 final IFileEditorInput input = (IFileEditorInput) editorInput;
                 final IFile file = input.getFile();
                 final IProject project = file.getProject();
-                return SearchUtil.getProjectScope(project);
+                return Lists.newArrayList(project);
             }
         } else {
             final IWorkbenchSite site = getSite();
@@ -349,22 +346,28 @@ public abstract class FindAction extends SelectionDispatchAction {
                     .getSelection();
             if (selection instanceof IStructuredSelection) {
                 final IStructuredSelection ss = (IStructuredSelection) selection;
-                final Object element = ss.getFirstElement();
-                if (element instanceof IErlElement) {
-                    final IErlElement e = (IErlElement) element;
-                    return SearchUtil.getProjectScope(e.getResource()
-                            .getProject());
-                } else if (element instanceof IResource) {
-                    final IResource r = (IResource) element;
-                    return SearchUtil.getProjectScope(r.getProject());
+                final Collection<IProject> result = Sets.newHashSet();
+                for (final Object element : ss.toList()) {
+                    if (element instanceof IErlElement) {
+                        final IErlElement e = (IErlElement) element;
+                        result.add(e.getResource().getProject());
+                    } else if (element instanceof IResource) {
+                        final IResource r = (IResource) element;
+                        result.add(r.getProject());
+                    }
                 }
+                return result;
             }
         }
         return null;
     }
 
-    protected Collection<IResource> getWorkingSetsScope(
-            final IWorkingSet[] workingSets) throws InterruptedException {
+    protected ErlSearchScope getProjectScope() {
+        return SearchUtil.getProjectsScope(getProjects());
+    }
+
+    protected ErlSearchScope getWorkingSetsScope(final IWorkingSet[] workingSets)
+            throws InterruptedException {
         IWorkingSet[] ws = workingSets;
         if (ws == null) {
             ws = SearchUtil.queryWorkingSets();
@@ -377,7 +380,7 @@ public abstract class FindAction extends SelectionDispatchAction {
         }
     }
 
-    protected Collection<IErlModule> getWorkingSetsExternalScope(
+    protected ErlSearchScope getWorkingSetsExternalScope(
             final IWorkingSet[] workingSets) throws InterruptedException {
         IWorkingSet[] ws = workingSets;
         if (ws == null) {

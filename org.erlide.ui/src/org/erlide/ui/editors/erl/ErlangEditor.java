@@ -119,6 +119,7 @@ import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.ISourceRange;
 import org.erlide.core.erlang.ISourceReference;
 import org.erlide.core.erlang.util.ErlideUtil;
+import org.erlide.core.erlang.util.ModelUtils;
 import org.erlide.core.search.ModuleLineFunctionArityRef;
 import org.erlide.core.text.ErlangToolkit;
 import org.erlide.jinterface.backend.BackendException;
@@ -258,6 +259,7 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
     /** The occurrences finder job canceler */
     private OccurrencesFinderJobCanceler fOccurrencesFinderJobCanceler;
     private String stateDirCached;
+    public static final String ERLANG_EDITOR_ID = "org.erlide.ui.editors.erl.ErlangEditor";
 
     /**
      * Simple constructor
@@ -315,7 +317,10 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
         // cancel possible running computation
         fMarkOccurrenceAnnotations = false;
         uninstallOccurrencesFinder();
-
+        if (getSourceViewerConfiguration() instanceof EditorConfiguration) {
+            final EditorConfiguration ec = (EditorConfiguration) getSourceViewerConfiguration();
+            ec.getContentAssistProcessor().dispose();
+        }
         if (fActivationListener != null) {
             PlatformUI.getWorkbench().removeWindowListener(fActivationListener);
             fActivationListener = null;
@@ -888,7 +893,10 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
 
     public IErlModule getModule() {
         if (fModule == null) {
-            fModule = ErlModelUtils.getModule(getEditorInput());
+            try {
+                fModule = ErlModelUtils.getModule(getEditorInput());
+            } catch (final CoreException e) {
+            }
         }
         return fModule;
     }
@@ -1233,7 +1241,12 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
 
     @Override
     public void createPartControl(final Composite parent) {
-        super.createPartControl(parent);
+        try {
+            super.createPartControl(parent);
+        } catch (final IllegalArgumentException e) {
+            // #661: nicer message if file is encoded in utf-8
+            throw filterUTF8Exception(e);
+        }
 
         getBracketInserterPrefs();
 
@@ -1268,6 +1281,29 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
 
         if (isMarkingOccurrences()) {
             installOccurrencesFinder(false);
+        }
+    }
+
+    private IllegalArgumentException filterUTF8Exception(
+            final IllegalArgumentException e) {
+        final StackTraceElement[] stack = e.getStackTrace();
+        boolean filterIt = false;
+        for (final StackTraceElement element : stack) {
+            if (filterIt) {
+                break;
+            }
+            if (!element.getClassName().equals("org.eclipse.swt.SWT")) {
+                filterIt = element.getClassName().equals(
+                        "org.eclipse.swt.custom.StyledText")
+                        && element.getMethodName().equals("setStyleRanges");
+            }
+        }
+        if (filterIt) {
+            return new IllegalArgumentException(
+                    "Erlang tools do not support source files encoded in UTF-8",
+                    e);
+        } else {
+            return e;
         }
     }
 
@@ -1745,7 +1781,11 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
             return;
         }
         resetReconciler();
-        module.resetAndCacheScannerAndParser(getDocument().get());
+        try {
+            module.resetAndCacheScannerAndParser(getDocument().get());
+        } catch (final ErlModelException e) {
+            ErlLogger.error(e);
+        }
     }
 
     public void resetReconciler() {
@@ -2030,18 +2070,21 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
             }
         };
         final ISelectionProvider selectionProvider = getSelectionProvider();
-        ((IPostSelectionProvider) selectionProvider)
-                .addPostSelectionChangedListener(fPostSelectionListener);
-        if (forceUpdate && selectionProvider != null) {
-            fForcedMarkOccurrencesSelection = selectionProvider.getSelection();
-            final IErlModule module = getModule();
-            if (module != null) {
-                updateOccurrenceAnnotations(
-                        (ITextSelection) fForcedMarkOccurrencesSelection,
-                        module);
+        if (selectionProvider != null) {
+            ((IPostSelectionProvider) selectionProvider)
+                    .addPostSelectionChangedListener(fPostSelectionListener);
+
+            if (forceUpdate) {
+                fForcedMarkOccurrencesSelection = selectionProvider
+                        .getSelection();
+                final IErlModule module = getModule();
+                if (module != null) {
+                    updateOccurrenceAnnotations(
+                            (ITextSelection) fForcedMarkOccurrencesSelection,
+                            module);
+                }
             }
         }
-
         if (fOccurrencesFinderJobCanceler == null) {
             fOccurrencesFinderJobCanceler = new OccurrencesFinderJobCanceler();
             fOccurrencesFinderJobCanceler.install();
@@ -2072,7 +2115,7 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
 
     protected boolean isMarkingOccurrences() {
         final IEclipsePreferences prefsNode = ErlideUIPlugin.getPrefsNode();
-        return prefsNode.getBoolean("markingOccurences", true);
+        return prefsNode.getBoolean("markingOccurences", false);
     }
 
     /**
@@ -2153,10 +2196,10 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
             fHasChanged = hasChanged;
         }
 
-        private void findRefs(final IErlModule module,
+        private void findRefs(final IErlModule theModule,
                 final ITextSelection selection, final boolean hasChanged) {
             final String scannerModuleName = ErlangToolkit
-                    .createScannerModuleName(module);
+                    .createScannerModuleName(theModule);
             final ErlideBackend ideBackend = ErlangCore.getBackendManager()
                     .getIdeBackend();
             fRefs = null;
@@ -2167,20 +2210,20 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
             try {
                 final int offset = selection.getOffset();
                 final OpenResult res = ErlideOpen.open(ideBackend,
-                        scannerModuleName, offset, ErlModelUtils
-                                .getImportsAsList(module), "", ErlangCore
+                        scannerModuleName, offset, ModelUtils
+                                .getImportsAsList(theModule), "", ErlangCore
                                 .getModel().getPathVars());
                 final ErlangSearchPattern pattern = SearchUtil
-                        .getSearchPatternFromOpenResultAndLimitTo(module,
+                        .getSearchPatternFromOpenResultAndLimitTo(theModule,
                                 offset, res, LimitTo.ALL_OCCURRENCES, false);
                 if (fCanceled) {
                     return;
                 }
                 if (pattern != null) {
                     final List<ModuleLineFunctionArityRef> findRefs = ErlideSearchServer
-                            .findRefs(ideBackend, pattern, module,
+                            .findRefs(ideBackend, pattern, theModule,
                                     getStateDir());
-                    fRefs = getErlangRefs(module, findRefs);
+                    fRefs = getErlangRefs(theModule, findRefs);
                 }
             } catch (final BackendException e) {
                 ErlLogger.debug(e);
@@ -2489,6 +2532,10 @@ public class ErlangEditor extends TextEditor implements IOutlineContentCreator,
                     .toString();
         }
         return stateDirCached;
+    }
+
+    public String getPath() {
+        return getModule().getFilePath();
     }
 
 }

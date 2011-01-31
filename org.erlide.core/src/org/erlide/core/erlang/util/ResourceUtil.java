@@ -14,23 +14,12 @@ import java.io.InputStreamReader;
 import org.eclipse.core.filesystem.URIUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
-import org.erlide.core.ErlangPlugin;
-import org.erlide.core.erlang.ErlModelException;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.core.erlang.IErlExternal;
-import org.erlide.core.erlang.IErlProject;
-import org.erlide.jinterface.backend.util.Assert;
-
 
 /**
  * <p>
@@ -42,59 +31,6 @@ import org.erlide.jinterface.backend.util.Assert;
  * @author Andrei Formiga
  */
 public class ResourceUtil {
-
-    /**
-     * <p>
-     * returns whether the passed resource is an Erlang source file, as
-     * recognized by the file extensions '.erl' and '.hrl'.
-     * </p>
-     */
-    public static boolean hasErlangExtension(final IResource resource) {
-        final String ext = resource.getFileExtension();
-        return ErlideUtil.isModuleExtension(ext);
-    }
-
-    /**
-     * <p>
-     * returns the output folder of the passed project as resource. The project
-     * must have the Erlang nature.
-     * </p>
-     */
-    public static IContainer getOutFolder(final IProject project)
-            throws CoreException {
-        Assert.isTrue(project.hasNature(ErlangPlugin.NATURE_ID));
-
-        final IPath outputPath = getErlProject(project).getOutputLocation();
-        IContainer result;
-        if (outputPath.equals(project.getProjectRelativePath())) {
-            result = project;
-        } else {
-            result = project.getFolder(outputPath);
-        }
-        return result;
-    }
-
-    /**
-     * <p>
-     * returns the source folder of the passed project as resource. The project
-     * must have the Erlang nature.
-     * </p>
-     */
-    public static IContainer getSourceFolder(final IProject project)
-            throws CoreException {
-        Assert.isTrue(project.hasNature(ErlangPlugin.NATURE_ID));
-
-        final IContainer result = null;
-        // IPath sourcePath = getErlProject(project).getSourcePath();
-        // if (sourcePath.equals(project.getProjectRelativePath()))
-        // {
-        // result = project;
-        // } else
-        // {
-        // result = project.getFolder(sourcePath);
-        // }
-        return result;
-    }
 
     /**
      * <p>
@@ -159,25 +95,27 @@ public class ResourceUtil {
     }
 
     // FIXME can't we use erlang model instead?
-    public static IResource recursiveFindNamedResourceWithReferences(
-            final IContainer container, final String name,
-            final ContainerFilter filter) throws CoreException {
-        final IResource r = recursiveFindNamedResource(container, name, filter);
+    public static IResource recursiveFindNamedModuleResourceWithReferences(
+            final IContainer container, final String fileName,
+            final ContainerFilterCreator filterCreator) throws CoreException {
+        final IProject project = container.getProject();
+        final ContainerFilter filter = filterCreator
+                .createFilterForProject(project);
+        final IResource r = recursiveFindNamedResource(container, fileName,
+                filter);
         if (r != null) {
             return r;
         }
-        final IProject project = container.getProject();
         for (final IProject p : project.getReferencedProjects()) {
-            final IResource r1 = recursiveFindNamedResource(p, name, filter);
+            final ContainerFilter pFilter = filterCreator
+                    .createFilterForProject(p);
+            final IResource r1 = recursiveFindNamedResource(p, fileName,
+                    pFilter);
             if (r1 != null) {
                 return r1;
             }
         }
         return null;
-    }
-
-    private static IErlProject getErlProject(final IProject project) {
-        return ErlangCore.getModel().findProject(project);
     }
 
     public static IFile getFileFromLocation(final String location) {

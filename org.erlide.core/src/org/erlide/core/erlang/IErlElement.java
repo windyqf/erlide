@@ -12,6 +12,7 @@
 package org.erlide.core.erlang;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 
@@ -63,7 +64,7 @@ import org.eclipse.core.runtime.jobs.ISchedulingRule;
 public interface IErlElement extends IAdaptable {
 
     enum Kind {
-        ERROR, MODEL, PROJECT, MODULE, ATTRIBUTE, FUNCTION, CLAUSE, EXPORT, IMPORT, EXPORTFUNCTION, HEADERCOMMENT, COMMENT, RECORD_DEF, MACRO_DEF, FOLDER, TYPESPEC, EXTERNAL
+        ERROR, MODEL, PROJECT, MODULE, ATTRIBUTE, FUNCTION, CLAUSE, EXPORT, IMPORT, EXPORTFUNCTION, HEADERCOMMENT, COMMENT, RECORD_DEF, MACRO_DEF, FOLDER, TYPESPEC, EXTERNAL, RECORD_FIELD
     }
 
     /**
@@ -88,12 +89,12 @@ public interface IErlElement extends IAdaptable {
      * type. Returns <code>null</code> if no such an ancestor can be found. This
      * is a handle-only method.
      * 
-     * @param ancestorType
-     *            the given type
+     * @param kind
+     *            the given kind
      * @return the first ancestor of this Erlang element that has the given
-     *         type, null if no such an ancestor can be found
+     *         kind, null if no such an ancestor can be found
      */
-    IErlElement getAncestor(Kind ancestorType);
+    IErlElement getAncestorOfKind(Kind kind);
 
     /**
      * Returns the enclosing IErlProject if there is one
@@ -106,6 +107,8 @@ public interface IErlElement extends IAdaptable {
      * @return module or null
      */
     IErlModule getModule();
+
+    String getModuleName();
 
     /**
      * Returns the resource that corresponds directly to this element, or
@@ -158,7 +161,7 @@ public interface IErlElement extends IAdaptable {
      * @return the parent element, or <code>null</code> if this element has no
      *         parent
      */
-    IErlElement getParent();
+    IParent getParent();
 
     /**
      * Returns the innermost resource enclosing this element. This is a
@@ -220,10 +223,10 @@ public interface IErlElement extends IAdaptable {
      */
     boolean isStructureKnown() throws ErlModelException;
 
-    void resourceChanged();
+    void resourceChanged(IResourceDelta delta);
 
-    static final int VISIT_REFERENCED = 0x0001;
-    static final int VISIT_EXTERNALS = 0x0002;
+    // static final int VISIT_REFERENCED = 0x0001;
+    // static final int VISIT_EXTERNALS = 0x0002;
     static final int VISIT_LEAFS_ONLY = 0x0004;
 
     /**
@@ -242,6 +245,12 @@ public interface IErlElement extends IAdaptable {
     // in the label provider...
     String getLabelString();
 
+    /**
+     * Return the file path of the underlying element, i.e. if it's a module,
+     * the file path to the element being edited
+     * 
+     * @return path or null if not a file-based element
+     */
     public abstract String getFilePath();
 
 }

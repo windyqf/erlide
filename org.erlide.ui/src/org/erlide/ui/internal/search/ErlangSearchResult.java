@@ -16,7 +16,6 @@ import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
 import org.erlide.core.erlang.IErlModule;
-import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.core.erlang.util.ResourceUtil;
 import org.erlide.ui.editors.erl.ErlangEditor;
 
@@ -67,13 +66,13 @@ public class ErlangSearchResult extends AbstractTextSearchResult implements
     }
 
     private int countMatches(final Object element, final Match[] matches) {
-        int result = 0;
+        int theResult = 0;
         for (final Match match : matches) {
             if (match.getElement().equals(element)) {
-                result++;
+                theResult++;
             }
         }
-        return result;
+        return theResult;
     }
 
     @Override
@@ -166,7 +165,7 @@ public class ErlangSearchResult extends AbstractTextSearchResult implements
         final List<Match> l = new ArrayList<Match>();
         final List<ErlangSearchElement> eses = esr.getResult();
         final String name = file.getName();
-        if (eses == null || !ErlideUtil.hasModuleExtension(name)) {
+        if (eses == null) {// || !ErlideUtil.hasModuleExtension(name)) {
             return NO_MATCHES;
         }
         for (final ErlangSearchElement ese : eses) {

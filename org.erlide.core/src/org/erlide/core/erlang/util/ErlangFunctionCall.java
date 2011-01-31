@@ -2,9 +2,7 @@ package org.erlide.core.erlang.util;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangList;
-import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangRangeException;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
 public class ErlangFunctionCall {
@@ -32,32 +30,19 @@ public class ErlangFunctionCall {
     public ErlangFunctionCall(final OtpErlangTuple t) {
         final OtpErlangAtom m = (OtpErlangAtom) t.elementAt(0);
         final OtpErlangAtom f = (OtpErlangAtom) t.elementAt(1);
+        final OtpErlangList pars = (OtpErlangList) t.elementAt(2);
         module = m.atomValue();
         function = f.atomValue();
-        final OtpErlangObject element2 = t.elementAt(2);
-        if (element2 instanceof OtpErlangLong) {
-            final OtpErlangLong arityL = (OtpErlangLong) element2;
-            int a;
-            try {
-                a = arityL.intValue();
-            } catch (final OtpErlangRangeException e) {
-                a = -1;
-            }
-            arity = a;
-            parameters = null;
-        } else {
-            final OtpErlangList pars = (OtpErlangList) element2;
-            final StringBuilder sb = new StringBuilder("(");
-            for (final OtpErlangObject i : pars) {
-                sb.append(i.toString()).append(", ");
-            }
-            if (pars.arity() > 0) {
-                sb.delete(sb.length() - 2, Integer.MAX_VALUE);
-            }
-            sb.append(')');
-            parameters = sb.toString();
-            arity = pars.arity();
+        final StringBuilder sb = new StringBuilder("(");
+        for (final OtpErlangObject i : pars) {
+            sb.append(i.toString()).append(", ");
         }
+        if (pars.arity() > 0) {
+            sb.delete(sb.length() - 2, Integer.MAX_VALUE);
+        }
+        sb.append(')');
+        parameters = sb.toString();
+        arity = pars.arity();
     }
 
     public String getModule() {

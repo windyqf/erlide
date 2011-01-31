@@ -11,8 +11,6 @@
 package org.erlide.jinterface.backend;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,13 +23,14 @@ public class RuntimeInfo {
 
     private String homeDir = "";
     private String args = "";
+    private String name;
+    private List<String> codePath;
+
     private String cookie = "";
     private String nodeName = "";
     private String workingDir = "";
     private boolean managed; // will it be started/stopped by us?
     private RuntimeVersion version;
-    private String name;
-    private List<String> codePath;
     private String suffix = "";
     private boolean useLongName = true;
     private boolean startShell = false;
@@ -119,7 +118,7 @@ public class RuntimeInfo {
     }
 
     public String getWorkingDir() {
-        return (workingDir == null || workingDir.length() == 0) ? "."
+        return workingDir == null || workingDir.length() == 0 ? "."
                 : workingDir;
     }
 
@@ -155,8 +154,8 @@ public class RuntimeInfo {
         }
         final String gotArgs = getArgs();
         if (!empty(gotArgs)) {
-            String[] xargs = split(gotArgs);
-            for (String a : xargs) {
+            final String[] xargs = split(gotArgs);
+            for (final String a : xargs) {
                 result.add(a);
             }
         }
@@ -167,11 +166,12 @@ public class RuntimeInfo {
 
         final boolean globalLongName = System.getProperty("erlide.longname",
                 "false").equals("true");
-        final String nameTag = (useLongName || globalLongName) ? "-name"
+        final String nameTag = useLongName || globalLongName ? "-name"
                 : "-sname";
         String nameOption = "";
         if (!getNodeName().equals("")) {
-            nameOption = BackendUtil.buildNodeName(getNodeName(), useLongName);
+            nameOption = BackendUtil.buildLocalNodeName(getNodeName(),
+                    useLongName);
             result.add(nameTag);
             result.add(nameOption);
             final String cky = getCookie();
@@ -186,14 +186,14 @@ public class RuntimeInfo {
 
     /**
      * split on spaces but respect quotes
-     *
-     * @param args
+     * 
+     * @param theArgs
      * @return
      */
-    private String[] split(final String args) {
-        Pattern p = Pattern.compile("(\"[^\"]*?\"|'[^']*?'|\\S+)");
-        Matcher m = p.matcher(args);
-        List<String> tokens = new ArrayList<String>();
+    private String[] split(final String theArgs) {
+        final Pattern p = Pattern.compile("(\"[^\"]*?\"|'[^']*?'|\\S+)");
+        final Matcher m = p.matcher(theArgs);
+        final List<String> tokens = new ArrayList<String>();
         while (m.find()) {
             tokens.add(m.group(1));
         }
@@ -266,21 +266,6 @@ public class RuntimeInfo {
         return v != null;
     }
 
-    static String readstring(final InputStream is) {
-        try {
-            is.read();
-            byte[] b = new byte[2];
-            is.read(b);
-            final int len = b[0] * 256 + b[1];
-            b = new byte[len];
-            is.read(b);
-            final String s = new String(b);
-            return s;
-        } catch (final IOException e) {
-            return null;
-        }
-    }
-
     public static boolean isValidOtpHome(final String otpHome) {
         // Check if it looks like a ERL_TOP location:
         if (otpHome == null) {
@@ -321,12 +306,12 @@ public class RuntimeInfo {
             return false;
         }
 
-        boolean hasErlc = hasExecutableFile(otpHome + "/bin/erlc");
+        final boolean hasErlc = hasExecutableFile(otpHome + "/bin/erlc");
         return hasErlc;
     }
 
     protected static String cvt(final Collection<String> path) {
-        StringBuilder result = new StringBuilder();
+        final StringBuilder result = new StringBuilder();
         for (String s : path) {
             if (s.length() > 0) {
                 if (s.contains(" ")) {
@@ -359,7 +344,7 @@ public class RuntimeInfo {
         return startShell;
     }
 
-    public void hasConsole(final boolean console) {
+    public void setHasConsole(final boolean console) {
         this.console = console;
     }
 
@@ -367,7 +352,7 @@ public class RuntimeInfo {
         return console;
     }
 
-    public void setLoadAllNodes(boolean loadAllNodes) {
+    public void setLoadAllNodes(final boolean loadAllNodes) {
         this.loadAllNodes = loadAllNodes;
     }
 

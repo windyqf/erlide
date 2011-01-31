@@ -13,9 +13,7 @@ package org.erlide.ui.editors.erl.hover;
 import java.net.URL;
 import java.util.Collection;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.Platform;
@@ -52,8 +50,6 @@ import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.util.ErlangFunction;
 import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.core.erlang.util.ModelUtils;
-import org.erlide.core.erlang.util.PluginUtils;
-import org.erlide.core.erlang.util.ResourceUtil;
 import org.erlide.core.text.ErlangToolkit;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.util.Util;
@@ -64,7 +60,6 @@ import org.erlide.ui.editors.erl.ErlangEditor;
 import org.erlide.ui.information.ErlInformationPresenter;
 import org.erlide.ui.information.PresenterControlCreator;
 import org.erlide.ui.internal.ErlBrowserInformationControlInput;
-import org.erlide.ui.util.ErlModelUtils;
 import org.erlide.ui.util.eclipse.text.BrowserInformationControl;
 import org.erlide.ui.util.eclipse.text.HTMLPrinter;
 import org.osgi.framework.Bundle;
@@ -73,7 +68,6 @@ import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangRangeException;
-import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
 
 import erlang.ErlideDoc;
@@ -265,7 +259,7 @@ public class ErlTextHover implements ITextHover,
         // element = module.getElementAt(hoverRegion.getOffset());
         // } catch (Exception e) {
         // }
-        final Collection<OtpErlangObject> fImports = ErlModelUtils
+        final Collection<OtpErlangObject> fImports = ModelUtils
                 .getImportsAsList(module);
 
         final int offset = hoverRegion.getOffset();
@@ -315,45 +309,22 @@ public class ErlTextHover implements ITextHover,
                     // and
                     // use same code for content assist, open and hover
                     if (openKind.equals("local") || openKind.equals("external")) {
-                        IErlModule m = null;
+                        IErlModule module2 = null;
                         OtpErlangLong arityLong = null;
                         if (openKind.equals("local")) {
                             arityLong = (OtpErlangLong) t.elementAt(2);
-                            m = module;
+                            module2 = module;
                         } else if (openKind.equals("external")) {
                             final OtpErlangAtom a2 = (OtpErlangAtom) t
                                     .elementAt(2);
-                            final String mod = ErlModelUtils.resolveMacroValue(
+                            final String mod = ModelUtils.resolveMacroValue(
                                     definedName, module);
                             definedName = a2.atomValue();
-                            arityLong = (OtpErlangLong) t.elementAt(3);
-                            IResource r = null;
-                            if (t.arity() > 3
-                                    && t.elementAt(4) instanceof OtpErlangString) {
-                                final OtpErlangString s4 = (OtpErlangString) t
-                                        .elementAt(4);
-                                // XXX final String path = Util.stringValue(s4);
-                                // try {
-                                // r = ErlModelUtils.findExternalModule(mod,
-                                // path, project, true);
-                                // } catch (final CoreException e2) {
-                                // }
-                            } else {
-                                final String modFileName = mod + ".erl";
-                                if (project != null) {
-                                    r = ResourceUtil
-                                            .recursiveFindNamedResourceWithReferences(
-                                                    project,
-                                                    modFileName,
-                                                    PluginUtils
-                                                            .getSourcePathFilter(project));
-                                }
-                            }
-                            if (!(r instanceof IFile)) {
-                                return null;
-                            }
-                            final IFile file = (IFile) r;
-                            m = ModelUtils.getModule(file);
+                            module2 = ModelUtils.findExternalModule(mod, null,
+                                    erlProject, true);
+                        }
+                        if (module2 == null) {
+                            return null;
                         }
                         int arity = -1;
                         try {
@@ -364,14 +335,11 @@ public class ErlTextHover implements ITextHover,
                         }
                         final ErlangFunction erlangFunction = new ErlangFunction(
                                 definedName, arity);
-                        if (m == null) {
-                            return null;
-                        }
                         IErlFunction f = null;
                         try {
-                            m.open(null);
-                            f = ModelUtils.findFunction(m, erlangFunction);
-                            element = f;
+                            module2.open(null);
+                            f = ModelUtils
+                                    .findFunction(module2, erlangFunction);
                         } catch (final ErlModelException e) {
                         }
                         if (f == null) {
@@ -391,13 +359,11 @@ public class ErlTextHover implements ITextHover,
                                 : IErlElement.Kind.MACRO_DEF;
                         final String externalIncludes = model
                                 .getExternalIncludes(erlProject);
-                        IErlPreprocessorDef pd = ErlModelUtils
-                                .findPreprocessorDef(ide, project, module,
-                                        definedName, kindToFind,
-                                        externalIncludes);
+                        IErlPreprocessorDef pd = ModelUtils
+                                .findPreprocessorDef(module, definedName,
+                                        kindToFind, externalIncludes);
                         if (pd == null) {
-                            pd = ErlModelUtils.findPreprocessorDef(ide,
-                                    project, module,
+                            pd = ModelUtils.findPreprocessorDef(module,
                                     ErlideUtil.unquote(definedName),
                                     kindToFind, externalIncludes);
                         }

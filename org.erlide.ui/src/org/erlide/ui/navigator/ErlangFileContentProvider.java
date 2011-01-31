@@ -17,7 +17,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.ui.Saveable;
 import org.eclipse.ui.navigator.SaveablesProvider;
 import org.eclipse.ui.progress.UIJob;
 import org.erlide.core.erlang.ErlModelException;
@@ -29,7 +28,6 @@ import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.IOpenable;
 import org.erlide.core.erlang.IParent;
-import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.core.erlang.util.ModelUtils;
 import org.erlide.jinterface.util.ErlLogger;
 
@@ -88,10 +86,11 @@ public class ErlangFileContentProvider implements ITreeContentProvider,
     public Object getParent(final Object element) {
         if (element instanceof IErlElement) {
             final IErlElement elt = (IErlElement) element;
-            final IErlElement parent = elt.getParent();
+            final IParent parent = elt.getParent();
             if (parent instanceof IErlModule || parent instanceof IErlProject) {
                 try {
-                    return parent.getCorrespondingResource();
+                    final IErlElement e = (IErlElement) parent;
+                    return e.getCorrespondingResource();
                 } catch (final ErlModelException e) {
                     ErlLogger.warn(e);
                 }
@@ -121,10 +120,10 @@ public class ErlangFileContentProvider implements ITreeContentProvider,
         ErlangCore.getModel().removeModelChangeListener(this);
     }
 
-    public void inputChanged(final Viewer viewer, final Object oldInput,
+    public void inputChanged(final Viewer theViewer, final Object oldInput,
             final Object newInput) {
-        if (viewer instanceof StructuredViewer) {
-            this.viewer = (StructuredViewer) viewer;
+        if (theViewer instanceof StructuredViewer) {
+            viewer = (StructuredViewer) theViewer;
         }
     }
 
@@ -164,9 +163,9 @@ public class ErlangFileContentProvider implements ITreeContentProvider,
             return true;
         case IResource.FILE:
             final IFile file = (IFile) source;
-            if (ErlideUtil.hasModuleExtension(file.getName())) {
-                doRefresh(file);
-            }
+            // if (ErlideUtil.isErlangFileContentFileName(file.getName())) {
+            doRefresh(file);
+            // }
             return false;
         }
         return false;
@@ -198,26 +197,8 @@ public class ErlangFileContentProvider implements ITreeContentProvider,
 
     public Object getAdapter(@SuppressWarnings("rawtypes") final Class required) {
         if (SaveablesProvider.class.equals(required)) {
-            return new SaveablesProvider() {
-
-                @Override
-                public Object[] getElements(final Saveable saveable) {
-                    // TODO Auto-generated method stub
-                    return null;
-                }
-
-                @Override
-                public Saveable getSaveable(final Object element) {
-                    // TODO Auto-generated method stub
-                    return null;
-                }
-
-                @Override
-                public Saveable[] getSaveables() {
-                    // TODO Auto-generated method stub
-                    return null;
-                }
-            };
+            // TODO return something useful
+            return null;
         }
         return null;
     }
