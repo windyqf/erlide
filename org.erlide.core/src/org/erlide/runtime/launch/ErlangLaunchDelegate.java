@@ -70,8 +70,7 @@ import com.google.common.collect.Maps;
 
 import erlang.ErlideDebug;
 
-public class ErlangLaunchDelegate implements
-        ILaunchConfigurationDelegate {
+public class ErlangLaunchDelegate implements ILaunchConfigurationDelegate {
 
     private ErlangDebugTarget target;
 
@@ -106,7 +105,7 @@ public class ErlangLaunchDelegate implements
         }
         final RuntimeInfo rt = buildRuntimeInfo(internal, data, rt0);
         final EnumSet<BackendOptions> options = setupBackendOptions(mode, data);
-        Map<String, String> myenv = setupEnvironment(env, data);
+        final Map<String, String> myenv = setupEnvironment(env, data);
         setCaptureOutput(launch);
 
         ErlideBackend backend = null;
@@ -120,7 +119,7 @@ public class ErlangLaunchDelegate implements
                         "Couldn't find the node " + data.nodeName, null);
                 throw new DebugException(s);
             }
-            postLaunch(mode, data, projects, rt, options, backend);
+            postLaunch(mode, data, projects, rt, options, backend, launch);
         } catch (final BackendException e) {
             ErlLogger.error("Launch: backend error!");
             final Status s = new Status(IStatus.ERROR, ErlangPlugin.PLUGIN_ID,
@@ -218,8 +217,8 @@ public class ErlangLaunchDelegate implements
 
     protected void postLaunch(final String mode, final ErlLaunchData data,
             final Set<IProject> projects, final RuntimeInfo rt,
-            final EnumSet<BackendOptions> options, final ErlideBackend backend)
-            throws DebugException {
+            final EnumSet<BackendOptions> options, final ErlideBackend backend,
+            final ILaunch launch2) throws DebugException {
 
         registerProjectsWithExecutionBackend(backend, projects);
         if (!backend.isDistributed()) {
@@ -385,7 +384,7 @@ public class ErlangLaunchDelegate implements
         return null;
     }
 
-    void runInitial(final String module, final String function,
+    protected void runInitial(final String module, final String function,
             final String args, final Backend backend) {
         ErlLogger.debug("calling startup function %s:%s", module, function);
         try {

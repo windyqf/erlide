@@ -64,10 +64,11 @@ public class ErlModelUtils {
         return false;
     }
 
-    public static void openElement(final IErlElement element)
+    public static IEditorPart openElement(final IErlElement element)
             throws PartInitException {
         final IEditorPart editor = EditorUtility.openInEditor(element);
         EditorUtility.revealInEditor(editor, element);
+        return editor;
     }
 
     public static void openSourceRange(final IErlModule module,

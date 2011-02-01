@@ -39,7 +39,8 @@ Export-Package: erlang,
   x-friends:="org.erlide.tracing.core,
    org.erlide.ui,
    org.erlide.selfhost,
-   org.erlide.test_support"
+   org.erlide.test_support,
+   org.erlide.eunit"
 Require-Bundle: org.eclipse.core.filesystem,
  org.eclipse.core.resources,
  org.eclipse.core.runtime,

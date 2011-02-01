@@ -190,7 +190,6 @@ public abstract class ErlElement extends PlatformObject implements IErlElement,
     /**
      * @see IErlElement
      */
-    @SuppressWarnings("null")
     public IErlElement getAncestorOfKind(final Kind kind) {
         IErlElement element = this;
         while (element != null) {

@@ -60,8 +60,6 @@ public abstract class OpenEditorAction extends Action {
 			reveal(editor);
 		} catch (final PartInitException e) {
 			e.printStackTrace();
-		} catch (final ErlModelException e) {
-			e.printStackTrace();
 		}
 	}
 
