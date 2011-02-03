@@ -33,6 +33,7 @@ import org.eclipse.ui.IWorkingSet;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.IWorkingSetSelectionDialog;
 import org.eclipse.ui.progress.IProgressService;
+import org.erlide.backend.util.StringUtils;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.ErlangCore;
 import org.erlide.core.erlang.IErlElement;
@@ -181,6 +182,9 @@ public class SearchUtil {
                         throws ErlModelException {
                     if (theElement instanceof IErlExternal) {
                         final IErlExternal theExternal = (IErlExternal) theElement;
+                        if (theExternal.isOTP()) {
+                            return false;
+                        }
                         theExternal.open(null);
                     }
                     if (theElement instanceof IErlModule) {
@@ -326,7 +330,7 @@ public class SearchUtil {
             return null;
         }
         String name = res.getName();
-        final String unquoted = name != null ? ErlideUtil.unquote(name) : null;
+        final String unquoted = name != null ? StringUtils.unquote(name) : null;
         if (res.isExternalCall()) {
             if (module != null && offset != -1) {
                 try {

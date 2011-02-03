@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.RegistryFactory;
+import org.erlide.backend.util.StringUtils;
 import org.erlide.core.ErlangPlugin;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.ErlangCore;
@@ -39,7 +40,6 @@ import org.erlide.core.erlang.IOpenable;
 import org.erlide.core.erlang.IParent;
 import org.erlide.core.erlang.ISourceRange;
 import org.erlide.core.erlang.SourceRange;
-import org.erlide.core.util.StringUtils;
 import org.erlide.jinterface.backend.Backend;
 import org.erlide.jinterface.backend.BackendException;
 import org.erlide.jinterface.util.ErlLogger;
@@ -201,7 +201,8 @@ public class ModelUtils {
         final Collection<IErlModule> modules = project.getExternalModules();
         for (final IErlModule module : modules) {
             final String filePath = module.getFilePath();
-            if (filePath != null && StringUtils.equalFilePaths(path, filePath)) {
+            if (filePath != null && path != null
+                    && StringUtils.equalFilePaths(path, filePath)) {
                 result.add(module);
             }
         }
@@ -416,7 +417,7 @@ public class ModelUtils {
             return m.getModuleName();
         }
         final IErlPreprocessorDef def = m.findPreprocessorDef(
-                ErlideUtil.withoutInterrogationMark(definedName),
+                StringUtils.withoutInterrogationMark(definedName),
                 Kind.MACRO_DEF);
         if (def != null) {
             final String extra = def.getExtra();
@@ -526,22 +527,14 @@ public class ModelUtils {
                     }
                 }
             }
-            if (modulePath != null) {
-                final IErlModule module = modelMap.getModuleByPath(modulePath);
-                if (module != null) {
+            for (final IErlModule module : modules) {
+                if (moduleInProject(module, project)) {
                     return module;
                 }
             }
             if (modulePath != null) {
-                for (final IErlModule module : modules) {
-                    final String filePath = module.getFilePath();
-                    if (filePath != null && modulePath.equals(filePath)) {
-                        return module;
-                    }
-                }
-            }
-            for (final IErlModule module : modules) {
-                if (moduleInProject(module, project)) {
+                final IErlModule module = modelMap.getModuleByPath(modulePath);
+                if (module != null && moduleInProject(module, project)) {
                     return module;
                 }
             }
@@ -587,7 +580,7 @@ public class ModelUtils {
             final IErlModule module, final String definedName,
             final IErlElement.Kind kind, final String externalIncludes)
             throws CoreException, BackendException {
-        String unquoted = ErlideUtil.unquote(definedName);
+        String unquoted = StringUtils.unquote(definedName);
         final Set<String> names = new HashSet<String>(3);
         if (kind == Kind.RECORD_DEF) {
             while (names.add(unquoted)) {
@@ -624,7 +617,7 @@ public class ModelUtils {
         final List<OtpErlangObject> result = new ArrayList<OtpErlangObject>(
                 imports.size());
         for (final IErlImport i : imports) {
-            final List<ErlangFunction> functions = i.getFunctions();
+            final Collection<ErlangFunction> functions = i.getFunctions();
             final OtpErlangObject funsT[] = new OtpErlangObject[functions
                     .size()];
             int j = 0;

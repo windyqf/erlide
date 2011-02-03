@@ -38,6 +38,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.EditorsUI;
+import org.erlide.backend.util.StringUtils;
 import org.erlide.core.erlang.ErlModelException;
 import org.erlide.core.erlang.ErlToken;
 import org.erlide.core.erlang.ErlangCore;
@@ -48,7 +49,6 @@ import org.erlide.core.erlang.IErlModule;
 import org.erlide.core.erlang.IErlPreprocessorDef;
 import org.erlide.core.erlang.IErlProject;
 import org.erlide.core.erlang.util.ErlangFunction;
-import org.erlide.core.erlang.util.ErlideUtil;
 import org.erlide.core.erlang.util.ModelUtils;
 import org.erlide.core.text.ErlangToolkit;
 import org.erlide.jinterface.backend.Backend;
@@ -364,7 +364,7 @@ public class ErlTextHover implements ITextHover,
                                         kindToFind, externalIncludes);
                         if (pd == null) {
                             pd = ModelUtils.findPreprocessorDef(module,
-                                    ErlideUtil.unquote(definedName),
+                                    StringUtils.unquote(definedName),
                                     kindToFind, externalIncludes);
                         }
                         if (pd != null) {
