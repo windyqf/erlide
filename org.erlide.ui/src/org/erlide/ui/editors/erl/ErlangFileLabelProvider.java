@@ -5,9 +5,9 @@ import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.navigator.IDescriptionProvider;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.core.model.root.IErlElement;
 import org.erlide.ui.editors.erl.outline.ErlangElementImageProvider;
+import org.erlide.ui.internal.ErlideUIPlugin;
 import org.erlide.ui.navigator.NavigatorProblemsDecorator;
 
 public class ErlangFileLabelProvider extends LabelProvider implements
@@ -54,7 +54,11 @@ public class ErlangFileLabelProvider extends LabelProvider implements
     @Override
     public void addListener(final ILabelProviderListener listener) {
         // TODO Auto-generated method stub
+    }
 
+    @Override
+    public void removeListener(final ILabelProviderListener listener) {
+        // TODO Auto-generated method stub
     }
 
     @Override
@@ -63,14 +67,7 @@ public class ErlangFileLabelProvider extends LabelProvider implements
 
     @Override
     public boolean isLabelProperty(final Object element, final String property) {
-        // TODO Auto-generated method stub
         return true;
-    }
-
-    @Override
-    public void removeListener(final ILabelProviderListener listener) {
-        // TODO Auto-generated method stub
-
     }
 
 }

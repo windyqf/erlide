@@ -13,7 +13,7 @@ package org.erlide.ui.templates;
 import org.eclipse.jface.text.templates.GlobalTemplateVariables;
 import org.eclipse.jface.text.templates.Template;
 import org.eclipse.jface.text.templates.TemplateContextType;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.ui.internal.ErlideUIPlugin;
 
 public class ErlangSourceContextTypeModule extends TemplateContextType {
 
@@ -28,6 +28,7 @@ public class ErlangSourceContextTypeModule extends TemplateContextType {
     public ErlangSourceContextTypeModule() {
         addGlobalResolvers();
         addModuleResolver();
+        fInstance = this;
     }
 
     private void addModuleResolver() {
@@ -57,7 +58,7 @@ public class ErlangSourceContextTypeModule extends TemplateContextType {
 
     public static ErlangSourceContextTypeModule getDefault() {
         if (fInstance == null) {
-            fInstance = new ErlangSourceContextTypeModule();
+            new ErlangSourceContextTypeModule();
         }
         return fInstance;
     }

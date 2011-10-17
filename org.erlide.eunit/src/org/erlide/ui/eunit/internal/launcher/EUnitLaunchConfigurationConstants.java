@@ -11,7 +11,7 @@
 
 package org.erlide.ui.eunit.internal.launcher;
 
-import org.erlide.core.ErlangPlugin;
+import org.erlide.core.ErlangCore;
 
 /**
  * Attribute keys used by the IJUnitLaunchConfiguration. Note that these
@@ -19,35 +19,35 @@ import org.erlide.core.ErlangPlugin;
  */
 public class EUnitLaunchConfigurationConstants {
 
-	public static final String MODE_RUN_QUIETLY_MODE = "runQuietly"; //$NON-NLS-1$
-	public static final String ID_JUNIT_APPLICATION = "org.eclipse.jdt.junit.launchconfig"; //$NON-NLS-1$
+    public static final String MODE_RUN_QUIETLY_MODE = "runQuietly"; //$NON-NLS-1$
+    public static final String ID_JUNIT_APPLICATION = "org.eclipse.jdt.junit.launchconfig"; //$NON-NLS-1$
 
-	public static final String ATTR_NO_DISPLAY = ErlangPlugin.PLUGIN_ID
-			+ ".NO_DISPLAY"; //$NON-NLS-1$
+    public static final String ATTR_NO_DISPLAY = ErlangCore.PLUGIN_ID
+            + ".NO_DISPLAY"; //$NON-NLS-1$
 
-	public static final String ATTR_PORT = ErlangPlugin.PLUGIN_ID + ".PORT"; //$NON-NLS-1$
+    public static final String ATTR_PORT = ErlangCore.PLUGIN_ID + ".PORT"; //$NON-NLS-1$
 
-	public static final String ATTR_TEST_PROJECT = ErlangPlugin.PLUGIN_ID
-			+ ".TESTPROJECT"; // $NON-NLS-1$
+    public static final String ATTR_TEST_PROJECT = ErlangCore.PLUGIN_ID
+            + ".TESTPROJECT"; // $NON-NLS-1$
 
-	public static final String ATTR_TEST_MODULE = ErlangPlugin.PLUGIN_ID
-			+ ".TESTMODULE"; //$NON-NLS-1$
+    public static final String ATTR_TEST_MODULE = ErlangCore.PLUGIN_ID
+            + ".TESTMODULE"; //$NON-NLS-1$
 
-	public static final String ATTR_TEST_FUNCTION = ErlangPlugin.PLUGIN_ID
-			+ ".TESTKIND"; // $NON-NLS-1$
+    public static final String ATTR_TEST_FUNCTION = ErlangCore.PLUGIN_ID
+            + ".TESTKIND"; // $NON-NLS-1$
 
-	public static final String ATTR_KEEPRUNNING = ErlangPlugin.PLUGIN_ID
-			+ ".KEEPRUNNING_ATTR"; //$NON-NLS-1$
-	// /**
-	// * The launch container, or "" iff running a single test type.
-	// */
-	// public static final String ATTR_TEST_CONTAINER = ErlangPlugin.PLUGIN_ID
-	//            + ".CONTAINER"; //$NON-NLS-1$
+    public static final String ATTR_KEEPRUNNING = ErlangCore.PLUGIN_ID
+            + ".KEEPRUNNING_ATTR"; //$NON-NLS-1$
+    // /**
+    // * The launch container, or "" iff running a single test type.
+    // */
+    // public static final String ATTR_TEST_CONTAINER = ErlangCore.PLUGIN_ID
+    //            + ".CONTAINER"; //$NON-NLS-1$
 
-	public static final String ATTR_FAILURES_NAMES = ErlangPlugin.PLUGIN_ID
-			+ ".FAILURENAMES"; //$NON-NLS-1$
+    public static final String ATTR_FAILURES_NAMES = ErlangCore.PLUGIN_ID
+            + ".FAILURENAMES"; //$NON-NLS-1$
 
-	public static final String ATTR_TEST_RUNNER_KIND = ErlangPlugin.PLUGIN_ID
-			+ ".TEST_KIND"; //$NON-NLS-1$
+    public static final String ATTR_TEST_RUNNER_KIND = ErlangCore.PLUGIN_ID
+            + ".TEST_KIND"; //$NON-NLS-1$
 
 }

@@ -25,11 +25,11 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
-import org.erlide.core.erlang.ErlModelException;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.core.erlang.IErlFunction;
-import org.erlide.core.erlang.IErlFunctionClause;
-import org.erlide.core.erlang.IErlModule;
+import org.erlide.core.model.erlang.IErlFunction;
+import org.erlide.core.model.erlang.IErlFunctionClause;
+import org.erlide.core.model.erlang.IErlModule;
+import org.erlide.core.model.root.ErlModelException;
+import org.erlide.core.model.root.IErlElement;
 import org.erlide.wrangler.refactoring.selection.IErlMemberSelection;
 import org.erlide.wrangler.refactoring.util.GlobalParameters;
 import org.erlide.wrangler.refactoring.util.WranglerUtils;
@@ -74,12 +74,12 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
     @Override
     protected Control createDialogArea(final Composite parent) {
 
-        Composite composite = (Composite) super.createDialogArea(parent);
+        final Composite composite = (Composite) super.createDialogArea(parent);
         final Tree functionClausesTree;
 
-        Label label = new Label(composite, SWT.WRAP);
+        final Label label = new Label(composite, SWT.WRAP);
         label.setText("Please select the function clause which against should fold!");
-        GridData minToksData = new GridData(GridData.GRAB_HORIZONTAL
+        final GridData minToksData = new GridData(GridData.GRAB_HORIZONTAL
                 | GridData.GRAB_VERTICAL | GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.VERTICAL_ALIGN_CENTER);
         minToksData.widthHint = convertHorizontalDLUsToPixels(IDialogConstants.MINIMUM_MESSAGE_AREA_WIDTH);
@@ -87,36 +87,38 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
         label.setFont(parent.getFont());
 
         functionClausesTree = new Tree(composite, SWT.BORDER);
-        GridData treeData = new GridData(GridData.GRAB_HORIZONTAL
+        final GridData treeData = new GridData(GridData.GRAB_HORIZONTAL
                 | GridData.GRAB_VERTICAL | GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.VERTICAL_ALIGN_CENTER);
         treeData.widthHint = convertHorizontalDLUsToPixels(IDialogConstants.MINIMUM_MESSAGE_AREA_WIDTH);
         functionClausesTree.setLayoutData(treeData);
 
-        Collection<IErlModule> erlmodules;
         try {
-            erlmodules = GlobalParameters.getWranglerSelection()
-                    .getErlElement().getErlProject().getModules();
+            final Collection<IErlModule> erlmodules = GlobalParameters
+                    .getWranglerSelection().getErlElement().getProject()
+                    .getModules();
 
-            for (IErlModule m : erlmodules) {
+            for (final IErlModule m : erlmodules) {
                 // must refresh the scanner!
                 if (/* !m.isStructureKnown() */true) {
                     // FIXME: not permitted operation
                     m.open(null);
                 }
 
-                TreeItem moduleName = new TreeItem(functionClausesTree, 0);
+                final TreeItem moduleName = new TreeItem(functionClausesTree, 0);
                 moduleName.setText(m.getModuleName());
                 moduleName.setData(m);
-                List<IErlFunction> functions = filterFunctions(m.getChildren());
-                for (IErlFunction f : functions) {
-                    TreeItem functionName = new TreeItem(moduleName, 0);
+                final List<IErlFunction> functions = filterFunctions(m
+                        .getChildren());
+                for (final IErlFunction f : functions) {
+                    final TreeItem functionName = new TreeItem(moduleName, 0);
                     functionName.setText(f.getNameWithArity());
-                    List<IErlFunctionClause> clauses = filterClauses(f
+                    final List<IErlFunctionClause> clauses = filterClauses(f
                             .getChildren());
                     functionName.setData(f);
-                    for (IErlFunctionClause c : clauses) {
-                        TreeItem clauseName = new TreeItem(functionName, 0);
+                    for (final IErlFunctionClause c : clauses) {
+                        final TreeItem clauseName = new TreeItem(functionName,
+                                0);
                         clauseName.setText(String.valueOf(c.getName()));
                         clauseName.setData(c);
                     }
@@ -134,19 +136,19 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
                 // and store the selection
                 public void widgetSelected(final SelectionEvent e) {
 
-                    TreeItem[] selectedItems = functionClausesTree
+                    final TreeItem[] selectedItems = functionClausesTree
                             .getSelection();
 
                     if (selectedItems.length > 0) {
-                        TreeItem treeItem = selectedItems[0];
-                        Object data = treeItem.getData();
+                        final TreeItem treeItem = selectedItems[0];
+                        final Object data = treeItem.getData();
                         if (data instanceof IErlFunctionClause) {
                             // enable the ok button
                             okButton.setEnabled(true);
 
                             // highlight
                             WranglerUtils
-                                    .highlightSelection(((IErlFunctionClause) data));
+                                    .highlightSelection((IErlFunctionClause) data);
 
                             // store
                             functionClause = (IErlFunctionClause) data;
@@ -158,7 +160,7 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
                 }
 
             });
-        } catch (ErlModelException e) {
+        } catch (final ErlModelException e) {
             e.printStackTrace();
         }
 
@@ -168,20 +170,22 @@ public class RemoteFunctionClauseDialog extends AbstractInputDialog {
 
     protected List<IErlFunctionClause> filterClauses(
             final Collection<IErlElement> children) {
-        ArrayList<IErlFunctionClause> clauses = new ArrayList<IErlFunctionClause>();
-        for (IErlElement e : children) {
-            if (e instanceof IErlFunctionClause)
+        final ArrayList<IErlFunctionClause> clauses = new ArrayList<IErlFunctionClause>();
+        for (final IErlElement e : children) {
+            if (e instanceof IErlFunctionClause) {
                 clauses.add((IErlFunctionClause) e);
+            }
         }
         return clauses;
     }
 
     protected List<IErlFunction> filterFunctions(
             final Collection<IErlElement> elements) {
-        ArrayList<IErlFunction> functions = new ArrayList<IErlFunction>();
-        for (IErlElement e : elements) {
-            if (e instanceof IErlFunction)
+        final ArrayList<IErlFunction> functions = new ArrayList<IErlFunction>();
+        for (final IErlElement e : elements) {
+            if (e instanceof IErlFunction) {
                 functions.add((IErlFunction) e);
+            }
         }
 
         return functions;

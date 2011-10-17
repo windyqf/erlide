@@ -11,6 +11,9 @@
 package org.erlide.ui.editors.erl.hover;
 
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Collection;
 
 import org.eclipse.core.resources.IProject;
@@ -38,40 +41,35 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.erlide.backend.util.StringUtils;
-import org.erlide.core.erlang.ErlModelException;
-import org.erlide.core.erlang.ErlToken;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.core.erlang.IErlFunction;
-import org.erlide.core.erlang.IErlModel;
-import org.erlide.core.erlang.IErlModule;
-import org.erlide.core.erlang.IErlPreprocessorDef;
-import org.erlide.core.erlang.IErlProject;
-import org.erlide.core.erlang.util.ErlangFunction;
-import org.erlide.core.erlang.util.ModelUtils;
-import org.erlide.core.text.ErlangToolkit;
-import org.erlide.jinterface.backend.Backend;
-import org.erlide.jinterface.backend.util.Util;
-import org.erlide.jinterface.util.ErlLogger;
-import org.erlide.runtime.backend.BackendManager;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.core.CoreScope;
+import org.erlide.core.backend.BackendCore;
+import org.erlide.core.backend.IBackend;
+import org.erlide.core.backend.IBackendManager;
+import org.erlide.core.common.Util;
+import org.erlide.core.model.erlang.ErlangToolkit;
+import org.erlide.core.model.erlang.IErlFunction;
+import org.erlide.core.model.erlang.IErlModule;
+import org.erlide.core.model.erlang.IErlPreprocessorDef;
+import org.erlide.core.model.root.ErlToken;
+import org.erlide.core.model.root.IErlModel;
+import org.erlide.core.model.root.IErlProject;
+import org.erlide.core.model.util.ModelUtils;
+import org.erlide.core.rpc.IRpcCallSite;
+import org.erlide.core.services.search.ErlideDoc;
+import org.erlide.core.services.search.OpenResult;
+import org.erlide.jinterface.ErlLogger;
+import org.erlide.ui.actions.OpenAction;
 import org.erlide.ui.editors.erl.ErlangEditor;
-import org.erlide.ui.information.ErlInformationPresenter;
-import org.erlide.ui.information.PresenterControlCreator;
 import org.erlide.ui.internal.ErlBrowserInformationControlInput;
+import org.erlide.ui.internal.ErlideUIPlugin;
+import org.erlide.ui.internal.information.ErlInformationPresenter;
+import org.erlide.ui.internal.information.PresenterControlCreator;
 import org.erlide.ui.util.eclipse.text.BrowserInformationControl;
 import org.erlide.ui.util.eclipse.text.HTMLPrinter;
 import org.osgi.framework.Bundle;
 
-import com.ericsson.otp.erlang.OtpErlangAtom;
-import com.ericsson.otp.erlang.OtpErlangLong;
 import com.ericsson.otp.erlang.OtpErlangObject;
-import com.ericsson.otp.erlang.OtpErlangRangeException;
 import com.ericsson.otp.erlang.OtpErlangTuple;
-
-import erlang.ErlideDoc;
-import erlang.OpenResult;
 
 public class ErlTextHover implements ITextHover,
         IInformationProviderExtension2, ITextHoverExtension,
@@ -197,7 +195,7 @@ public class ErlTextHover implements ITextHover,
 
                     @Override
                     public void setSize(int width, int height) {
-                        // TODO default size is too small
+                        // default size is too small
                         final Point bounds = getSizeConstraints();
                         if (bounds != null) {
                             if (bounds.x != SWT.DEFAULT) {
@@ -274,18 +272,20 @@ public class ErlTextHover implements ITextHover,
                 .toString();
         final IErlProject erlProject = module.getProject();
 
-        final BackendManager backendManager = ErlangCore.getBackendManager();
-        final Backend ide = backendManager.getIdeBackend();
+        final IBackendManager backendManager = BackendCore.getBackendManager();
+        final IBackend ide = backendManager.getIdeBackend();
         try {
             final IProject project = erlProject == null ? null : erlProject
-                    .getProject();
-            final Backend b = erlProject == null ? ide : backendManager
+                    .getWorkspaceProject();
+            final IRpcCallSite b = erlProject == null ? ide : backendManager
                     .getBuildBackend(project);
 
-            final IErlModel model = ErlangCore.getModel();
+            final IErlModel model = CoreScope.getModel();
+            final String externalModulesString = erlProject != null ? erlProject
+                    .getExternalModulesString() : null;
             r1 = ErlideDoc.getOtpDoc(ide, b, offset, stateDir,
                     ErlangToolkit.createScannerModuleName(module), fImports,
-                    model.getExternalModules(erlProject), model.getPathVars());
+                    externalModulesString, model.getPathVars());
             // ErlLogger.debug("getHoverInfo getDocFromScan " + r1);
             final OtpErlangTuple t = (OtpErlangTuple) r1;
             if (Util.isOk(t)) {
@@ -294,84 +294,20 @@ public class ErlTextHover implements ITextHover,
                 result.append(docStr);
                 element = or;
             } else {
-                // TODO here we should check like in 'open'
-                final OtpErlangObject o0 = t.elementAt(0);
-                final OtpErlangObject o1 = t.elementAt(1);
-                if (o0 instanceof OtpErlangAtom && o1 instanceof OtpErlangAtom) {
-                    final OtpErlangAtom a0 = (OtpErlangAtom) o0;
-                    final OtpErlangAtom a1 = (OtpErlangAtom) o1;
-                    final String openKind = a0.atomValue();
-                    if (openKind.equals("error")) {
+                final OpenResult or = new OpenResult(t);
+                final Object found = OpenAction.findOpenResult(editor, module,
+                        b, erlProject, or, offset);
+                if (found instanceof IErlFunction) {
+                    final IErlFunction function = (IErlFunction) found;
+                    String comment = function.getComment();
+                    if (comment == null) {
                         return null;
                     }
-                    String definedName = a1.atomValue();
-                    // TODO code below should be cleaned up, we should factorize
-                    // and
-                    // use same code for content assist, open and hover
-                    if (openKind.equals("local") || openKind.equals("external")) {
-                        IErlModule module2 = null;
-                        OtpErlangLong arityLong = null;
-                        if (openKind.equals("local")) {
-                            arityLong = (OtpErlangLong) t.elementAt(2);
-                            module2 = module;
-                        } else if (openKind.equals("external")) {
-                            final OtpErlangAtom a2 = (OtpErlangAtom) t
-                                    .elementAt(2);
-                            final String mod = ModelUtils.resolveMacroValue(
-                                    definedName, module);
-                            definedName = a2.atomValue();
-                            module2 = ModelUtils.findExternalModule(mod, null,
-                                    erlProject, true);
-                        }
-                        if (module2 == null) {
-                            return null;
-                        }
-                        int arity = -1;
-                        try {
-                            if (arityLong != null) {
-                                arity = arityLong.intValue();
-                            }
-                        } catch (final OtpErlangRangeException e) {
-                        }
-                        final ErlangFunction erlangFunction = new ErlangFunction(
-                                definedName, arity);
-                        IErlFunction f = null;
-                        try {
-                            module2.open(null);
-                            f = ModelUtils
-                                    .findFunction(module2, erlangFunction);
-                        } catch (final ErlModelException e) {
-                        }
-                        if (f == null) {
-                            return null;
-                        }
-                        final String comment = f.getComment();
-                        if (comment == null) {
-                            return null;
-                        }
-                        result.append(comment);
-                    } else {
-                        if (definedName.charAt(0) == '?') {
-                            definedName = definedName.substring(1);
-                        }
-                        final IErlElement.Kind kindToFind = openKind
-                                .equals("record") ? IErlElement.Kind.RECORD_DEF
-                                : IErlElement.Kind.MACRO_DEF;
-                        final String externalIncludes = model
-                                .getExternalIncludes(erlProject);
-                        IErlPreprocessorDef pd = ModelUtils
-                                .findPreprocessorDef(module, definedName,
-                                        kindToFind, externalIncludes);
-                        if (pd == null) {
-                            pd = ModelUtils.findPreprocessorDef(module,
-                                    StringUtils.unquote(definedName),
-                                    kindToFind, externalIncludes);
-                        }
-                        if (pd != null) {
-                            element = pd;
-                            result.append(pd.getExtra());
-                        }
-                    }
+                    comment = fixEncoding(comment);
+                    result.append(comment);
+                } else if (found instanceof IErlPreprocessorDef) {
+                    final IErlPreprocessorDef preprocessorDef = (IErlPreprocessorDef) found;
+                    result.append(preprocessorDef.getExtra());
                 }
             }
         } catch (final Exception e) {
@@ -386,4 +322,16 @@ public class ErlTextHover implements ITextHover,
                 result.toString(), 20);
     }
 
+    private static String fixEncoding(final String comment) {
+        try {
+            final byte[] bytes = comment.getBytes("ISO8859-1");
+            final ByteBuffer bb = ByteBuffer.wrap(bytes);
+            final CharBuffer cb = Charset.forName("UTF-8").newDecoder()
+                    .decode(bb);
+            return cb.toString();
+        } catch (final Exception e) {
+            // it was Latin-1
+        }
+        return comment;
+    }
 }

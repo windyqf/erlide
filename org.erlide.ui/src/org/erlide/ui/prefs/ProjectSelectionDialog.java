@@ -30,14 +30,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.SelectionStatusDialog;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.ui.internal.ErlideUIPlugin;
 import org.erlide.ui.util.StatusInfo;
 
 public class ProjectSelectionDialog extends SelectionStatusDialog {
 
     final static class OurLabelProvider implements ILabelProvider {
         public Image getImage(final Object element) {
-            // TODO Auto-generated method stub
             return null;
         }
 
@@ -47,24 +46,17 @@ public class ProjectSelectionDialog extends SelectionStatusDialog {
         }
 
         public void addListener(final ILabelProviderListener listener) {
-            // TODO Auto-generated method stub
-
         }
 
         public void dispose() {
-            // TODO Auto-generated method stub
-
         }
 
         public boolean isLabelProperty(final Object element,
                 final String property) {
-            // TODO Auto-generated method stub
-            return false;
+            return true;
         }
 
         public void removeListener(final ILabelProviderListener listener) {
-            // TODO Auto-generated method stub
-
         }
     }
 
@@ -112,9 +104,6 @@ public class ProjectSelectionDialog extends SelectionStatusDialog {
         };
     }
 
-    /*
-     * (non-Javadoc) Method declared on Dialog.
-     */
     @Override
     protected Control createDialogArea(final Composite parent) {
         // page group
@@ -199,11 +188,6 @@ public class ProjectSelectionDialog extends SelectionStatusDialog {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.dialogs.SelectionStatusDialog#computeResult()
-     */
     @Override
     protected void computeResult() {
     }

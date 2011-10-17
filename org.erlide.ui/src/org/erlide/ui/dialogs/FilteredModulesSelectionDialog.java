@@ -18,6 +18,7 @@ import java.text.ParseException;
 import java.text.RuleBasedCollator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -69,17 +70,19 @@ import org.eclipse.ui.dialogs.FilteredItemsSelectionDialog;
 import org.eclipse.ui.dialogs.SearchPattern;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 import org.eclipse.ui.statushandlers.StatusManager;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.core.erlang.IErlModel;
-import org.erlide.core.erlang.IOldErlangProjectProperties;
-import org.erlide.core.erlang.util.ErlideUtil;
-import org.erlide.core.erlang.util.PluginUtils;
-import org.erlide.core.erlang.util.ResourceUtil;
-import org.erlide.jinterface.backend.util.PreferencesUtils;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.core.CoreScope;
+import org.erlide.core.backend.BackendUtils;
+import org.erlide.core.common.CommonUtils;
+import org.erlide.core.common.PreferencesUtils;
+import org.erlide.core.model.root.IErlElementLocator;
+import org.erlide.core.model.root.IErlProject;
+import org.erlide.core.model.util.PluginUtils;
+import org.erlide.core.model.util.ResourceUtil;
 import org.erlide.ui.editors.erl.IErlangHelpContextIds;
+import org.erlide.ui.internal.ErlideUIPlugin;
 
-import erlang.ErlideOpen;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * Shows a list of resources to the user with a text entry field for a string
@@ -319,11 +322,6 @@ public class FilteredModulesSelectionDialog extends
     }
 
     @Override
-    protected void applyFilter() {
-        super.applyFilter();
-    }
-
-    @Override
     protected Comparator<Object> getItemsComparator() {
         if (fComparator == null) {
             final Collator collator = Collator.getInstance();
@@ -545,31 +543,31 @@ public class FilteredModulesSelectionDialog extends
     private class ModuleProxyVisitor implements IResourceProxyVisitor {
 
         private final AbstractContentProvider proxyContentProvider;
-        private final ModuleFilter resourceFilter;
+        private final ModuleFilter moduleFilter;
         private final IProgressMonitor progressMonitor;
         private final List<IResource> projects;
         private final Set<IPath> validPaths = new HashSet<IPath>();
-        private final Set<String> extraLocations = new HashSet<String>();
+        private final Set<IPath> extraLocations = Sets.newHashSet();
 
         /**
          * Creates new ResourceProxyVisitor instance.
          * 
          * @param contentProvider
-         * @param resourceFilter
+         * @param moduleFilter
          * @param progressMonitor
          * @throws CoreException
          */
         public ModuleProxyVisitor(
                 final AbstractContentProvider contentProvider,
-                final ModuleFilter resourceFilter,
+                final ModuleFilter moduleFilter,
                 final IProgressMonitor progressMonitor) throws CoreException {
             super();
             proxyContentProvider = contentProvider;
-            this.resourceFilter = resourceFilter;
+            this.moduleFilter = moduleFilter;
             this.progressMonitor = progressMonitor;
             final IResource[] resources = container.members();
             projects = new ArrayList<IResource>(Arrays.asList(resources));
-            extraLocations.addAll(ErlideOpen.getExtraSourcePaths());
+            extraLocations.addAll(BackendUtils.getExtraSourcePaths());
             if (progressMonitor != null) {
                 progressMonitor.beginTask("Searching", projects.size());
             }
@@ -582,56 +580,59 @@ public class FilteredModulesSelectionDialog extends
             }
 
             final IResource resource = proxy.requestResource();
-
+            if (!resource.isAccessible()) {
+                return false;
+            }
             final IProject project = resource.getProject();
+            final boolean accessible = project != null
+                    && project.isAccessible();
+            if (project != null && !accessible) {
+                return false;
+            }
             if (projects.remove(project) || projects.remove(resource)) {
                 progressMonitor.worked(1);
-                addPaths(project);
+                if (accessible) {
+                    addPaths(project);
+                }
             }
 
-            if (project == resource) {
-                // FIXME (JC) all this seems too much... is it really necessary?
-                // couldn't we just assume all links in external files should be
-                // matchable?
+            // FIXME (JC) all this seems too much... is it really necessary?
+            // couldn't we just assume all links in external files should be
+            // matchable?
+            if (project == resource && accessible) {
+                final IErlElementLocator model = CoreScope.getModel();
+                final IErlProject erlProject = model.findProject(project);
+                final String extMods = erlProject.getExternalModulesString();
+                final List<String> files = new ArrayList<String>();
+                files.addAll(PreferencesUtils.unpackList(extMods));
+                final String extIncs = erlProject.getExternalIncludesString();
+                files.addAll(PreferencesUtils.unpackList(extIncs));
 
-                // navigate even "external" lists
-                final IErlModel model = ErlangCore.getModel();
-                if (project != null) {
-                    final String extMods = model.getExternalModules(model
-                            .findProject(project));
-                    final List<String> files = new ArrayList<String>();
-                    files.addAll(PreferencesUtils.unpackList(extMods));
-                    final String extIncs = model.getExternalIncludes(model
-                            .findProject(project));
-                    files.addAll(PreferencesUtils.unpackList(extIncs));
+                final IPathVariableManager pvm = ResourcesPlugin.getWorkspace()
+                        .getPathVariableManager();
+                for (final String str : files) {
+                    IResource fres;
+                    try {
+                        fres = ResourceUtil.recursiveFindNamedResource(project,
+                                str, null);
+                    } catch (final CoreException e) {
+                        fres = null;
+                    }
+                    if (fres != null) {
+                        final List<String> lines = PreferencesUtils
+                                .readFile(fres.getLocation().toString());
+                        for (final String pref : lines) {
 
-                    final IPathVariableManager pvm = ResourcesPlugin
-                            .getWorkspace().getPathVariableManager();
-                    for (final String str : files) {
-                        IResource fres;
-                        try {
-                            fres = ResourceUtil.recursiveFindNamedResource(
-                                    project, str, null);
-                        } catch (final CoreException e) {
-                            fres = null;
-                        }
-                        if (fres != null) {
-                            final List<String> lines = PreferencesUtils
-                                    .readFile(fres.getLocation().toString());
-                            for (final String pref : lines) {
-
-                                String path;
-                                final IPath p = new Path(pref);
-                                final IPath v = PluginUtils.resolvePVMPath(pvm,
-                                        p);
-                                if (v.isAbsolute()) {
-                                    path = v.toString();
-                                } else {
-                                    path = project.getLocation().append(v)
-                                            .toString();
-                                }
-                                proxyContentProvider.add(path, resourceFilter);
+                            String path;
+                            final IPath p = new Path(pref);
+                            final IPath v = PluginUtils.resolvePVMPath(pvm, p);
+                            if (v.isAbsolute()) {
+                                path = v.toString();
+                            } else {
+                                path = project.getLocation().append(v)
+                                        .toString();
                             }
+                            proxyContentProvider.add(path, moduleFilter);
                         }
                     }
                 }
@@ -641,16 +642,14 @@ public class FilteredModulesSelectionDialog extends
                 return false;
             }
 
-            if (ErlideUtil.isErlangFileContentFileName(resource.getName())
-                    && !resource.isLinked()
-                    && !resource.getResourceAttributes().isSymbolicLink()
+            if (CommonUtils.isErlangFileContentFileName(resource.getName())
                     && !isLostFound(resource.getProjectRelativePath())) {
                 final IContainer my_container = resource.getParent();
                 if (validPaths.contains(my_container.getFullPath())
                         || !extraLocations.isEmpty()
                         && extraLocations.contains(my_container.getLocation()
                                 .toString())) {
-                    proxyContentProvider.add(resource, resourceFilter);
+                    proxyContentProvider.add(resource, moduleFilter);
                 }
             }
 
@@ -662,13 +661,36 @@ public class FilteredModulesSelectionDialog extends
         }
 
         private void addPaths(final IProject project) {
-            final IOldErlangProjectProperties prefs = ErlangCore
-                    .getProjectProperties(project);
-            validPaths.addAll(PluginUtils.getFullPaths(project,
-                    prefs.getIncludeDirs()));
-            validPaths.addAll(PluginUtils.getFullPaths(project,
-                    prefs.getSourceDirs()));
+            final IErlProject erlProject = CoreScope.getModel()
+                    .getErlangProject(project);
+            if (erlProject != null) {
+                validPaths.addAll(getFullPaths(project,
+                        erlProject.getIncludeDirs()));
+                validPaths.addAll(getFullPaths(project,
+                        erlProject.getSourceDirs()));
+                final Collection<IPath> extras = Lists.newArrayList();
+                for (final IPath p : BackendUtils
+                        .getExtraSourcePathsForModel(project)) {
+                    extras.add(p);
+                }
+                validPaths.addAll(getFullPaths(project, extras));
+            }
         }
+
+        private Set<IPath> getFullPaths(final IProject project,
+                final Collection<IPath> sourcePaths) {
+            final HashSet<IPath> result = new HashSet<IPath>();
+            for (final IPath path : sourcePaths) {
+                final String path_string = path.toString();
+                if (path_string.equals(".")) {
+                    result.add(project.getFullPath());
+                } else {
+                    result.add(project.getFolder(path).getFullPath());
+                }
+            }
+            return result;
+        }
+
     }
 
     protected static class MatchAnySearchPattern extends SearchPattern {
@@ -760,7 +782,10 @@ public class FilteredModulesSelectionDialog extends
             if ((filterTypeMask & resource.getType()) == 0) {
                 return false;
             }
-            return matches(resource.getName());
+            if (matches(resource.getName())) {
+                return !resource.getResourceAttributes().isSymbolicLink();
+            }
+            return false;
         }
 
         @Override

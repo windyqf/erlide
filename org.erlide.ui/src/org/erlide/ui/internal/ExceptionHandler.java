@@ -18,10 +18,10 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
-import org.erlide.jinterface.backend.BackendException;
-import org.erlide.jinterface.util.ErlLogger;
+import org.erlide.core.backend.BackendException;
+import org.erlide.core.rpc.RpcException;
+import org.erlide.jinterface.ErlLogger;
 import org.erlide.ui.ErlideUIMessages;
-import org.erlide.ui.ErlideUIPlugin;
 
 /**
  * The default exception handler shows an error dialog when one of its handle
@@ -136,6 +136,12 @@ public class ExceptionHandler {
         displayMessageDialog(e.getMessage(), shell, title, message);
     }
 
+    protected void perform(final RpcException e, final Shell shell,
+            final String title, final String message) {
+        ErlLogger.error(e);
+        displayMessageDialog(e.getMessage(), shell, title, message);
+    }
+
     private void displayMessageDialog(final String exceptionMessage,
             final Shell shell, final String title, final String message) {
         final StringWriter msg = new StringWriter();
@@ -152,6 +158,11 @@ public class ExceptionHandler {
     }
 
     public static void handle(final BackendException e, final Shell shell,
+            final String title, final String message) {
+        fgInstance.perform(e, shell, title, message);
+    }
+
+    public static void handle(final RpcException e, final Shell shell,
             final String title, final String message) {
         fgInstance.perform(e, shell, title, message);
     }

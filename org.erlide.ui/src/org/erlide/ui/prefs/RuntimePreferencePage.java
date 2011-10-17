@@ -64,10 +64,10 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.jinterface.backend.RuntimeInfo;
-import org.erlide.runtime.backend.RuntimeInfoManager;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.core.backend.BackendCore;
+import org.erlide.core.backend.runtimeinfo.RuntimeInfo;
+import org.erlide.core.backend.runtimeinfo.RuntimeInfoManager;
+import org.erlide.ui.internal.ErlideUIPlugin;
 import org.erlide.ui.util.SWTUtil;
 
 /**
@@ -129,50 +129,24 @@ public class RuntimePreferencePage extends PreferencePage implements
         setDescription("Add, remove or edit runtime definitions.\n"
                 + "The checked one will be used by default in new projects "
                 + "to build the project's code.");
-        manager = ErlangCore.getRuntimeInfoManager();
+        manager = BackendCore.getRuntimeInfoManager();
         performDefaults();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.viewers.ISelectionProvider#addSelectionChangedListener
-     * (org.eclipse.jface.viewers.ISelectionChangedListener)
-     */
     public void addSelectionChangedListener(
             final ISelectionChangedListener listener) {
         fSelectionListeners.add(listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.viewers.ISelectionProvider#getSelection()
-     */
     public ISelection getSelection() {
         return new StructuredSelection(fRuntimeList.getCheckedElements());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.viewers.ISelectionProvider#removeSelectionChangedListener
-     * (org.eclipse.jface.viewers.ISelectionChangedListener)
-     */
     public void removeSelectionChangedListener(
             final ISelectionChangedListener listener) {
         fSelectionListeners.remove(listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.viewers.ISelectionProvider#setSelection(org.eclipse
-     * .jface.viewers.ISelection)
-     */
     public void setSelection(final ISelection selection) {
         if (selection instanceof IStructuredSelection) {
             if (!selection.equals(fPrevSelection)) {
@@ -407,10 +381,10 @@ public class RuntimePreferencePage extends PreferencePage implements
     }
 
     /**
-     * @see IAddRuntimeDialogRequestor#isDuplicateName(String)
+     * @see IAddRuntimeDialogRequestor#hasRuntimeWithName(String)
      */
     public boolean isDuplicateName(final String name) {
-        return manager.isDuplicateName(name);
+        return manager.hasRuntimeWithName(name);
     }
 
     protected void editRuntime() {

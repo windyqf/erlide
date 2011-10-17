@@ -1,3 +1,6 @@
+
+
+
 %% Author: jakob
 %% Created: 20 dec 2010
 %% Description: TODO: Add description to erlide_search_tests
@@ -44,6 +47,21 @@ external_call_after_record_dot_field_test_() ->
     Value = test_refs(S, {external_call, a, f, 0}),
     [?_assertEqual(Expected, Value)].
 
+local_call_in_record_test_() ->
+    S = "a() ->\n    y(),\n    A#b{x = y()}.\n",
+    Expected = {ok, [{"xxx", a, 0, [], false, 11, 1, false},
+                     {"xxx", a, 0, [], false, 28, 1, false}]},
+    Value = test_refs(S, {external_call, xxx, y, 0}),
+    [?_assertEqual(Expected, Value)].
+
+external_call_after_empty_record_test_() ->
+    S = "f() ->\n    #x{},\n    a:f().\n",
+    Expected1 = {ok, [{"xxx", f, 0, [], false, 21, 3, false}]},
+    Value1 = test_refs(S, {external_call, a, f, 0}),
+    Expected2 = {ok, [{"xxx", f, 0, [], false, 11, 2, false}]},
+    Value2 = test_refs(S, {record_ref, x}),
+    [?_assertEqual(Expected1, Value1),
+     ?_assertEqual(Expected2, Value2)].
 
 %%
 %% Local Functions

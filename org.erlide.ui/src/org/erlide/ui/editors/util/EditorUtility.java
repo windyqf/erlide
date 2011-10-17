@@ -43,14 +43,14 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.ide.IGotoMarker;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.ITextEditor;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.core.erlang.IErlExternal;
-import org.erlide.core.erlang.IErlModule;
-import org.erlide.core.erlang.IParent;
-import org.erlide.core.erlang.ISourceRange;
-import org.erlide.jinterface.util.ErlLogger;
-import org.erlide.ui.ErlideUIPlugin;
+import org.erlide.core.model.erlang.IErlModule;
+import org.erlide.core.model.root.IErlElement;
+import org.erlide.core.model.root.IErlExternal;
+import org.erlide.core.model.root.IParent;
+import org.erlide.core.model.root.ISourceRange;
+import org.erlide.jinterface.ErlLogger;
 import org.erlide.ui.editors.erl.ErlangEditor;
+import org.erlide.ui.internal.ErlideUIPlugin;
 
 /**
  * A number of routines for working with JavaElements in editors.
@@ -309,7 +309,8 @@ public class EditorUtility {
         return null;
     }
 
-    private static IFile resolveFile(IFile file) {
+    private static IFile resolveFile(final IFile file) {
+        IFile result = file;
         if (file.getResourceAttributes().isSymbolicLink()) {
             try {
                 final File f = new File(file.getLocation().toString());
@@ -318,13 +319,18 @@ public class EditorUtility {
                 final String target = info
                         .getStringAttribute(EFS.ATTRIBUTE_LINK_TARGET);
                 if (target != null) {
-                    file = (IFile) file.getParent().findMember(target);
+                    // FIXME this is wrong in the general case
+                    // find the file in the externals!
+                    result = (IFile) file.getParent().findMember(target);
+                    if (result == null) {
+                        result = file;
+                    }
                 }
             } catch (final Exception e) {
                 ErlLogger.warn(e);
             }
         }
-        return file;
+        return result;
     }
 
     public static IEditorInput getEditorInput(final Object input) {

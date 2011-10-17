@@ -183,8 +183,10 @@ reindent_line(" " ++ S, I) ->
     reindent_line(S, I);
 reindent_line("\t" ++ S, I) ->
     reindent_line(S, I);
-reindent_line(S, I) when is_integer(I) ->
+reindent_line(S, I) when is_integer(I), I>0 ->
     lists:duplicate(I, $ )++S;
+reindent_line(S, I) when is_integer(I) ->
+    S;
 reindent_line(S, I) when is_list(I) ->
     I ++ S.
 
@@ -508,14 +510,19 @@ i_macro_rest(R0, I) ->
 	K when K=:=':'; K=:=','; K=:=';'; K=:=')'; K=:='}'; K=:=']'; K=:='>>'; K=:='of';
 	       K=:='end'; K=:='->' ->
 	    R0;
-	K ->
-	    case is_binary_op(K) of
-		false ->
-		    R2 = i_comments(R0, I),
-		    i_one(R2, I);
-		true ->
-		    R0
-	    end
+        K ->
+            case erlide_scan:reserved_word(K) of
+                true ->
+                    R0;
+                _ ->
+                    case is_binary_op(K) of
+                        false ->
+                            R2 = i_comments(R0, I),
+                            i_one(R2, I);
+                        true ->
+                            R0
+                    end
+            end
     end.
 
 i_if(R0, I0) ->
@@ -720,14 +727,21 @@ i_form(R0, I) ->
 i_declaration(R0, I) ->
     i_check(R0, I),
     R1 = i_kind('-', R0, I),
-    case i_sniff(R1) of
-        'spec' ->
+    case skip_comments(R1) of
+        [#token{kind='spec'} | _] ->
             R2 = i_kind('spec', R1, I),
             i_form(R2, I);
+        [#token{kind=atom, value='type'} | _] ->
+            R2 = i_kind(atom, R1, I),
+            i_type(R2, I);
         _ ->
             {R2, _A} = i_expr(R1, I, none),
             i_kind(dot, R2, I)
     end.
+
+i_type(R0, I0) ->
+    {R1, A1} = i_expr(R0, I0, none),
+    i_kind(dot, R1, I0).
 
 i_fun_clause(R0, I0) ->
     R1 = i_comments(R0, I0),
@@ -858,10 +872,10 @@ i_catch_clause_list(R, I) ->
 
 i_sniff(L) ->
     case skip_comments(L) of
-	[] ->
-	    eof;
-	[#token{kind=Kind} | _] ->
-	    Kind
+        [] ->
+            eof;
+        [#token{kind=Kind} | _] ->
+            Kind
     end.
 
 scan(S) ->

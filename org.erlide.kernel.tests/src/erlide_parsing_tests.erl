@@ -70,13 +70,48 @@ parsing_record_def_test_() ->
 parsing_function_with_macro_test_() ->
     %% http://www.assembla.com/spaces/erlide/tickets/571-functions-defined-with-macros-confuses-the-model
     [?_assertEqual(#model{forms=[#function{pos = {{0, 0, 0},12},
-					   name = '?f', arity = 0,
-					   args = [], head = "", clauses = [],
-					   name_pos = {{0, 0}, 2},
-					   comment = undefined,
-					   exported = false}],
-			  comments = []},
-		   test_parse("?f() -> ok."))].
+                                           name = '?f', arity = 0,
+                                           args = [], head = "", clauses = [],
+                                           name_pos = {{0, 0}, 2},
+                                           comment = undefined,
+                                           exported = false}],
+                          comments = []},
+                   test_parse("?f() -> ok."))].
+
+parsing_when_clauses_test_() ->
+    S = "" ++
+            "foo() ->\n"++
+            "case A of\n"++ 
+            "    ?CHST_HRL when is_integer(A);\n"++
+            "                   is_list(A) ->\n",
+    [?_assertEqual(#model{forms = [#function{pos = {{0,3,0},86},
+                                             name = foo,arity = 0,args = [],head = [],
+                                             clauses = [],
+                                             name_pos = {{0,0},3},
+                                             comment = undefined,exported = false}],
+                          comments = []},
+                   test_parse(S))].
+
+function_comments_only_toplevel_test_() ->
+    %% http://www.assembla.com/spaces/erlide/tickets/891-wrong-function-comment-in-edoc-view-and-hover 
+    S = "" ++
+            "f1()->\n"++
+            "    %some comment here \n"++
+            "    foo:bar().\n"++
+            "f2() ->\n"++
+            "    ok.",
+    [?_assertEqual(#model{forms = [#function{pos = {{0,2,0},46},
+                                             name = f1,arity = 0,args = [],head = [],clauses = [],
+                                             name_pos = {{0,0},2},
+                                             comment = undefined,exported = false},
+                                   #function{pos = {{3,4,46},16},
+                                             name = f2,arity = 0,args = [],head = [],clauses = [],
+                                             name_pos = {{3,46},2},
+                                             comment = undefined,exported = false}],
+                          comments = [#token{kind = comment,line = 1,offset = 11,
+                                             length = 19,value = <<"%some comment here ">>,text = u,
+                                             last_line = u}]},
+                   test_parse(S))].
 
 %%
 %% Local Functions

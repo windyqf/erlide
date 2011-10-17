@@ -15,8 +15,7 @@
          get_external_module/2,
          get_external_module_tree/1,
          get_external_include/2,
-	 get_external_1/3,
-         has_external_with_path/2,
+		 get_external_1/3,
          get_lib_dirs/0,
          get_lib_src_include/1,
          get_lib_files/1
@@ -86,11 +85,6 @@ get_external_include(FilePath, #open_context{externalIncludes=ExternalIncludes,
     ExtIncPaths = get_external_modules_files(ExternalIncludes, PathVars),
     get_ext_inc(ExtIncPaths, FilePath).
 
-has_external_with_path(FilePath, #open_context{externalModules=ExternalModules, 
-                                               pathVars=PathVars}) ->
-    ExtModPaths = get_external_modules_files(ExternalModules, PathVars),
-    ExtModPaths.
-
 get_lib_dirs() ->
     CodeLibs = [D || D <- code:get_path(), D =/= "."],
     LibDir = code:lib_dir(),
@@ -123,9 +117,30 @@ get_lib_files(Dir) ->
             {ok, []}
     end.
 
+get_includes_in_dir(Dir) ->
+    case file:list_dir(Dir) of
+        {ok, Files} ->
+            {ok, filter_includes(Files)};
+        _ ->
+            {ok, []}
+    end.
+
 %%
 %% Local Functions
 %%
+
+filter_includes(Files) ->
+    filter_includes(Files, []).
+
+filter_includes([], Acc) ->
+    lists:reverse(Acc);
+filter_includes([Filename | Rest], Acc) ->
+    case filename:extension(Filename) of
+        ".hrl" ->
+            filter_includes(Rest, [Filename | Acc]);
+        _ ->
+            filter_includes(Rest, Acc)
+    end.
 
 get_lib_dir(Dir) ->
     B = filename:basename(Dir),
@@ -369,7 +384,7 @@ get_external_modules_files(PackedFileNames, PathVars) ->
     Fun2 = fun(_Parent, _FileName, Acc) -> Acc end,
     FileNames = erlide_util:unpack(PackedFileNames),
     R = fold_externals(Fun, Fun2, FileNames, PathVars), 
-    ?D(R),
+    %%?D(R),
     R.
 
 replace_path_vars(FileNames, PathVars) ->
@@ -419,7 +434,7 @@ fx([FN0 | Rest], Fun, Fun2, PathVars, Parent, Done, Acc) ->
         true ->
             fx(Rest, Fun, Fun2, PathVars, Parent, Done, Acc);
         false ->
-            case Parent=:=top orelse filename:extension(FN) == ".erlidex" of
+            case Parent=:="root" orelse filename:extension(FN) == ".erlidex" of
                 true ->
                     {NewDone, NewAcc} = fx2(FN, Fun, Fun2, PathVars, Parent, Done, Acc),
                     fx(Rest, Fun, Fun2, PathVars, Parent, NewDone, NewAcc);
@@ -429,7 +444,6 @@ fx([FN0 | Rest], Fun, Fun2, PathVars, Parent, Done, Acc) ->
     end.
 
 fx2(FN, Fun, Fun2, PathVars, Parent, Done, Acc) ->
-    io:format("reading \"~s\"\n", [FN]),
     NewAcc = Fun2(Parent, FN, Acc),
     case file:read_file(FN) of
         {ok, B} ->
@@ -465,12 +479,17 @@ select_external([P | Rest], Mod) ->
 get_erl_from_dirs(undefined) ->
     [];
 get_erl_from_dirs(L) ->
+    ?D({get_erl_from_dirs, L}),
     lists:flatmap(fun(X) -> get_erl_from_dir(X) end,
                   L).
 
 get_erl_from_dir(D) ->
-    {ok, Fs} = file:list_dir(D),
-    [filename:join(D, F) || F<-Fs, filename:extension(F)==".erl"] .
+    case file:list_dir(D) of
+        {ok, Fs} ->
+            [filename:join(D, F) || F<-Fs, filename:extension(F)==".erl"];
+        _ ->
+            []
+    end.
 
 get_source(Mod) ->
     L = Mod:module_info(compile),

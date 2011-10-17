@@ -33,9 +33,9 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ui.dialogs.PropertyPage;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
-import org.erlide.core.ErlangPlugin;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.jinterface.backend.RuntimeInfo;
+import org.erlide.core.ErlangCore;
+import org.erlide.core.backend.BackendCore;
+import org.erlide.core.backend.runtimeinfo.RuntimeInfo;
 
 /*TODO ...this should implement IworkspacePreferencePage if it's going to be 
  * used as "default erlang project" page...*/
@@ -48,7 +48,7 @@ public class ErlProjectPropertyPage extends PropertyPage {
     @Override
     protected IPreferenceStore doGetPreferenceStore() {
         final IPreferenceStore store = new ScopedPreferenceStore(
-                new ProjectScope(getProject()), ErlangPlugin.PLUGIN_ID);
+                new ProjectScope(getProject()), ErlangCore.PLUGIN_ID);
         return store;
     }
 
@@ -319,7 +319,7 @@ public class ErlProjectPropertyPage extends PropertyPage {
             }
         }
 
-        final Collection<RuntimeInfo> rs = ErlangCore.getRuntimeInfoManager()
+        final Collection<RuntimeInfo> rs = BackendCore.getRuntimeInfoManager()
                 .getRuntimes();
         final List<String[]> vv = new ArrayList<String[]>();
         for (final RuntimeInfo ri : rs) {

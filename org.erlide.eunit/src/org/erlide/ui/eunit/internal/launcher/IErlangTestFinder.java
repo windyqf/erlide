@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.erlide.core.erlang.IErlElement;
-import org.erlide.core.erlang.IErlProject;
+import org.erlide.core.model.root.IErlElement;
+import org.erlide.core.model.root.IErlProject;
 import org.erlide.eunit.EUnitTestFunction;
 
 /**
@@ -26,19 +26,20 @@ import org.erlide.eunit.EUnitTestFunction;
  * org.eclipse.jdt.junit.internal_testKinds.
  */
 public interface IErlangTestFinder {
-	// ITestFinder NULL= new ITestFinder() {
-	// public void findTestsInContainer(IErlElement element, Set result,
-	// IProgressMonitor pm) {
-	// // do nothing
-	// }
-	//
-	// public boolean isTest(IType type) {
-	// return false;
-	// }
-	// };
+    // ITestFinder NULL= new ITestFinder() {
+    // public void findTestsInContainer(IErlElement element, Set result,
+    // IProgressMonitor pm) {
+    // // do nothing
+    // }
+    //
+    // public boolean isTest(IType type) {
+    // return false;
+    // }
+    // };
 
-	public List<EUnitTestFunction> findTestsInContainer(final IErlProject project,
-			IErlElement parent, IProgressMonitor pm) throws CoreException;
+    public List<EUnitTestFunction> findTestsInContainer(
+            final IErlProject project, IErlElement parent, IProgressMonitor pm)
+            throws CoreException;
 
-	// public boolean isTest(IErlElement element) throws CoreException;
+    // public boolean isTest(IErlElement element) throws CoreException;
 }

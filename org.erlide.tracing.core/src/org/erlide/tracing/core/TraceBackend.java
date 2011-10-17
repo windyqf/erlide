@@ -10,23 +10,21 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.jinterface.backend.Backend;
-import org.erlide.jinterface.backend.BackendException;
-import org.erlide.jinterface.backend.RuntimeInfo;
-import org.erlide.jinterface.backend.events.ErlangEvent;
-import org.erlide.jinterface.backend.events.EventHandler;
-import org.erlide.jinterface.util.ErlLogger;
-import org.erlide.runtime.backend.BackendManager;
-import org.erlide.runtime.backend.BackendManager.BackendOptions;
-import org.erlide.runtime.backend.ErtsProcess;
-import org.erlide.runtime.launch.ErlLaunchAttributes;
+import org.erlide.core.backend.BackendCore;
+import org.erlide.core.backend.BackendData;
+import org.erlide.core.backend.BackendOptions;
+import org.erlide.core.backend.ErlLaunchAttributes;
+import org.erlide.core.backend.IBackend;
+import org.erlide.core.backend.events.ErlangEventHandler;
+import org.erlide.core.backend.runtimeinfo.RuntimeInfo;
+import org.erlide.core.debug.ErlangLaunchDelegate;
+import org.erlide.core.rpc.RpcException;
+import org.erlide.jinterface.ErlLogger;
 import org.erlide.tracing.core.mvc.model.TraceCollections;
 import org.erlide.tracing.core.mvc.model.TracePattern;
 import org.erlide.tracing.core.mvc.model.TracedNode;
@@ -35,6 +33,7 @@ import org.erlide.tracing.core.mvc.model.treenodes.ITreeNode;
 import org.erlide.tracing.core.mvc.model.treenodes.TracingResultsNode;
 import org.erlide.tracing.core.preferences.PreferenceNames;
 import org.erlide.tracing.core.utils.TraceDataHandler;
+import org.osgi.service.event.Event;
 
 import com.ericsson.otp.erlang.OtpErlangAtom;
 import com.ericsson.otp.erlang.OtpErlangInt;
@@ -68,7 +67,7 @@ public class TraceBackend {
     private final Set<ProcessFlag> processFlags = new HashSet<ProcessFlag>();
     private TracedProcess[] processes;
     private ProcessMode processMode;
-    private Backend tracerBackend;
+    private IBackend tracerBackend;
     private boolean tracing;
     private boolean loading;
 
@@ -91,17 +90,18 @@ public class TraceBackend {
         return INSTANCE;
     }
 
-    private class TraceEventHandler extends EventHandler {
+    private class TraceEventHandler extends ErlangEventHandler {
+
+        public TraceEventHandler(final IBackend backend) {
+            super(EVENT_NAME, backend);
+        }
 
         private final TraceDataHandler dataHandler = new TraceDataHandler();
         private boolean firstTrace = true;
 
-        @Override
-        protected void doHandleEvent(final ErlangEvent event) throws Exception {
-            if (!event.hasTopic(EVENT_NAME)) {
-                return;
-            }
-            final OtpErlangObject message = event.data;
+        public void handleEvent(final Event event) {
+            final OtpErlangObject message = (OtpErlangObject) event
+                    .getProperty("DATA");
             if (message != null) {
                 OtpErlangObject errorReason = null;
                 // System.out.println("data: " + data);
@@ -159,8 +159,8 @@ public class TraceBackend {
                         tracing = true;
                         getBackend(true);
                         loadingFileInfo = true;
-                        handler = new TraceEventHandler();
-                        tracerBackend.getEventDaemon().addHandler(handler);
+                        handler = new TraceEventHandler(tracerBackend);
+                        handler.register();
 
                         // list of nodes being traced
                         final List<OtpErlangObject> erlangObjects = new ArrayList<OtpErlangObject>();
@@ -234,7 +234,7 @@ public class TraceBackend {
         } else {
             final OtpErlangList nodeNames = (OtpErlangList) tuple.elementAt(1);
             activatedNodes = new ArrayList<String>();
-            for (final OtpErlangObject nodeName : nodeNames.elements()) {
+            for (final OtpErlangObject nodeName : nodeNames) {
                 final String nodeNameString = ((OtpErlangAtom) nodeName)
                         .atomValue();
                 activatedNodes.add(nodeNameString);
@@ -273,14 +273,14 @@ public class TraceBackend {
                                 new OtpErlangInt(tracePattern.getArity()),
                                 matchSpec);
                     }
-                } catch (final BackendException e) {
+                } catch (final RpcException e) {
                     ErlLogger.error("Could not add pattern: " + e.getMessage());
                 }
             }
         }
     }
 
-    private void setProcessFlags() throws BackendException {
+    private void setProcessFlags() throws RpcException {
         if (ProcessMode.BY_PID.equals(processMode)) {
             // setting flags only for selected processes
             if (processes != null) {
@@ -312,7 +312,7 @@ public class TraceBackend {
                         loading = true;
                         tracerBackend.call(Constants.ERLANG_HELPER_MODULE,
                                 FUN_STOP, "");
-                    } catch (final BackendException e) {
+                    } catch (final RpcException e) {
                         ErlLogger.error("Could not stop tracing tool: "
                                 + e.getMessage());
                         errorObject = e;
@@ -336,12 +336,12 @@ public class TraceBackend {
                     try {
                         loading = true;
                         loadingFileInfo = true;
-                        handler = new TraceEventHandler();
+                        handler = new TraceEventHandler(tracerBackend);
                         getBackend(true);
-                        tracerBackend.getEventDaemon().addHandler(handler);
+                        handler.register();
                         tracerBackend.call(Constants.ERLANG_HELPER_MODULE,
                                 FUN_FILE_INFO, "s", new OtpErlangString(path));
-                    } catch (final BackendException e) {
+                    } catch (final RpcException e) {
                         ErlLogger.error(e);
                         errorObject = e;
                         finishLoading(TracingStatus.EXCEPTION_THROWN);
@@ -369,10 +369,10 @@ public class TraceBackend {
                         loading = true;
                         loadingFileInfo = false;
                         startIndex = theStartIndex;
-                        handler = new TraceEventHandler();
+                        handler = new TraceEventHandler(tracerBackend);
                         getBackend(true);
                         TraceCollections.getTracesList().clear();
-                        tracerBackend.getEventDaemon().addHandler(handler);
+                        handler.register();
                         final OtpErlangLong start = new OtpErlangLong(
                                 theStartIndex);
                         final OtpErlangLong stop = new OtpErlangLong(endIndex);
@@ -380,7 +380,7 @@ public class TraceBackend {
                                 FUN_LOAD, "sii", new OtpErlangString(
                                         activeResultSet.getFileName()), start,
                                 stop);
-                    } catch (final BackendException e) {
+                    } catch (final RpcException e) {
                         ErlLogger.error(e);
                         errorObject = e;
                         finishLoading(TracingStatus.EXCEPTION_THROWN);
@@ -434,7 +434,7 @@ public class TraceBackend {
      *            if backend should be created when it does not exist
      * @return backend
      */
-    public Backend getBackend(final boolean create) {
+    public IBackend getBackend(final boolean create) {
         if (tracerBackend == null && create) {
             tracerBackend = createBackend();
         }
@@ -448,7 +448,6 @@ public class TraceBackend {
      *            status
      */
     private void finishLoading(final TracingStatus status) {
-        tracerBackend.getEventDaemon().removeHandler(handler);
         for (final ITraceNodeObserver listener : listeners) {
             try {
                 if (loadingFileInfo) {
@@ -589,7 +588,7 @@ public class TraceBackend {
      *            results set
      */
     public void setActiveResultSet(final TracingResultsNode results) {
-        this.activeResultSet = results;
+        activeResultSet = results;
     }
 
     public TracingResultsNode getActiveResultSet() {
@@ -606,8 +605,8 @@ public class TraceBackend {
         return startIndex;
     }
 
-    private Backend createBackend() {
-        final RuntimeInfo info = RuntimeInfo.copy(ErlangCore
+    private IBackend createBackend() {
+        final RuntimeInfo info = RuntimeInfo.copy(BackendCore
                 .getRuntimeInfoManager().getErlideRuntime(), false);
         final String nodeName = Activator.getDefault().getPreferenceStore()
                 .getString(PreferenceNames.NODE_NAME);
@@ -618,12 +617,14 @@ public class TraceBackend {
                 info.setStartShell(false);
                 final EnumSet<BackendOptions> options = EnumSet.of(
                         BackendOptions.AUTOSTART, BackendOptions.NO_CONSOLE);
-
                 final ILaunchConfiguration launchConfig = getLaunchConfiguration(
                         info, options);
-                launchConfig.launch(ILaunchManager.RUN_MODE,
-                        new NullProgressMonitor(), false, false);
-                return BackendManager.getDefault().getByName(nodeName);
+
+                final IBackend b = BackendCore.getBackendFactory()
+                        .createBackend(
+                                new BackendData(launchConfig,
+                                        ILaunchManager.RUN_MODE));
+                return b;
             } catch (final Exception e) {
                 ErlLogger.error(e);
             }
@@ -636,7 +637,7 @@ public class TraceBackend {
         final ILaunchManager manager = DebugPlugin.getDefault()
                 .getLaunchManager();
         final ILaunchConfigurationType type = manager
-                .getLaunchConfigurationType(ErtsProcess.CONFIGURATION_TYPE_INTERNAL);
+                .getLaunchConfigurationType(ErlangLaunchDelegate.CONFIGURATION_TYPE_INTERNAL);
         ILaunchConfigurationWorkingCopy workingCopy;
         try {
             workingCopy = type.newInstance(null,

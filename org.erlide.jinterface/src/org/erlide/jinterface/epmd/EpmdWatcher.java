@@ -20,14 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.erlide.jinterface.util.ErlLogger;
+import org.erlide.jinterface.ErlLogger;
 
 import com.ericsson.otp.erlang.OtpEpmd;
 
 /**
- * Periodically, query epmd to see if there are any new nodes that have been
- * registered.
- * 
+ * Query epmd to see if there are any new nodes that have been registered and
+ * notify listeners.
  */
 public final class EpmdWatcher {
 
@@ -42,7 +41,7 @@ public final class EpmdWatcher {
     private final List<String> hosts = new ArrayList<String>();
     private final Map<String, List<String>> nodeMap = new HashMap<String, List<String>>();
     private final List<IEpmdListener> listeners = new ArrayList<IEpmdListener>();
-    private final Map<String, List<IEpmdMonitor>> monitors = new HashMap<String, List<IEpmdMonitor>>();
+    private final Map<String, List<IErlNodeMonitor>> monitors = new HashMap<String, List<IErlNodeMonitor>>();
     private boolean epmdStarted = false;
 
     synchronized public void addHost(final String host) {
@@ -76,17 +75,17 @@ public final class EpmdWatcher {
                         listener.updateNodeStatus(host, started, stopped);
                     }
                     for (final String s : started) {
-                        final List<IEpmdMonitor> ms = monitors.get(s);
+                        final List<IErlNodeMonitor> ms = monitors.get(s);
                         if (ms != null) {
-                            for (final IEpmdMonitor m : ms) {
+                            for (final IErlNodeMonitor m : ms) {
                                 m.nodeUp(s);
                             }
                         }
                     }
                     for (final String s : stopped) {
-                        final List<IEpmdMonitor> ms = monitors.get(s);
+                        final List<IErlNodeMonitor> ms = monitors.get(s);
                         if (ms != null) {
-                            for (final IEpmdMonitor m : ms) {
+                            for (final IErlNodeMonitor m : ms) {
                                 m.nodeDown(s);
                             }
                         }
@@ -165,10 +164,10 @@ public final class EpmdWatcher {
      * @param node
      * @param monitor
      */
-    public void addMonitor(final String node, final IEpmdMonitor monitor) {
-        List<IEpmdMonitor> mons = monitors.get(node);
+    public void addNodeMonitor(final String node, final IErlNodeMonitor monitor) {
+        List<IErlNodeMonitor> mons = monitors.get(node);
         if (mons == null) {
-            mons = new ArrayList<IEpmdMonitor>();
+            mons = new ArrayList<IErlNodeMonitor>();
         }
         if (mons.contains(monitor)) {
             return;
@@ -183,8 +182,9 @@ public final class EpmdWatcher {
      * @param node
      * @param monitor
      */
-    public void removeMonitor(final String node, final IEpmdMonitor monitor) {
-        final List<IEpmdMonitor> mons = monitors.get(node);
+    public void removeNodeMonitor(final String node,
+            final IErlNodeMonitor monitor) {
+        final List<IErlNodeMonitor> mons = monitors.get(node);
         if (mons == null) {
             return;
         }
@@ -194,18 +194,14 @@ public final class EpmdWatcher {
         }
     }
 
-    public static boolean findRunningNode(final String nodeName) {
+    public boolean hasLocalNode(final String nodeName) {
         try {
             final String[] names = OtpEpmd.lookupNames();
             final List<String> labels = EpmdWatcher.clean(Arrays.asList(names));
-            for (final String name : labels) {
-                if (name.equals(nodeName)) {
-                    return true;
-                }
-            }
+            return labels.contains(nodeName);
         } catch (final IOException e) {
+            return false;
         }
-        return false;
     }
 
 }

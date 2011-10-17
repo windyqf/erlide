@@ -43,21 +43,20 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
-import org.erlide.core.erlang.ErlangCore;
-import org.erlide.jinterface.backend.events.ErlangEvent;
-import org.erlide.jinterface.backend.events.EventHandler;
-import org.erlide.runtime.backend.ErlideBackend;
-import org.erlide.runtime.backend.ErlideBackendVisitor;
+import org.erlide.core.backend.BackendCore;
+import org.erlide.core.backend.IBackend;
+import org.erlide.core.backend.IErlideBackendVisitor;
+import org.erlide.core.backend.events.ErlangEventHandler;
+import org.erlide.core.rpc.IRpcCallSite;
 import org.erlide.ui.views.BackendContentProvider;
 import org.erlide.ui.views.BackendLabelProvider;
+import org.osgi.service.event.Event;
 
 import com.ericsson.otp.erlang.OtpErlangList;
 import com.ericsson.otp.erlang.OtpErlangObject;
 import com.ericsson.otp.erlang.OtpErlangPid;
 import com.ericsson.otp.erlang.OtpErlangString;
 import com.ericsson.otp.erlang.OtpErlangTuple;
-
-import erlang.ErlideProclist;
 
 /**
  * 
@@ -82,27 +81,25 @@ public class ProcessListView extends ViewPart {
      */
     class ViewContentProvider implements IStructuredContentProvider {
 
-        private final ProcessEventHandler handler = new ProcessEventHandler();
+        private final ProcessEventHandler handler = new ProcessEventHandler(
+                getBackend());
 
         public void inputChanged(final Viewer v, final Object oldInput,
                 final Object newInput) {
         }
 
         public void dispose() {
-            final ErlideBackend backend = getBackend();
-            if (backend != null) {
-                backend.getEventDaemon().removeHandler(handler);
-            }
+            final IBackend backend = getBackend();
         }
 
         public Object[] getElements(final Object parent) {
-            final ErlideBackend bk = getBackend();
-            if (bk == null) {
+            final IBackend backend = getBackend();
+            if (backend == null) {
                 return new OtpErlangObject[] {};
             }
-            bk.getEventDaemon().addHandler(handler);
+            handler.register();
 
-            final OtpErlangList r = ErlideProclist.getProcessList(bk);
+            final OtpErlangList r = ErlideProclist.getProcessList(backend);
             if (r.arity() == 0) {
                 return new OtpErlangObject[] {};
             }
@@ -116,14 +113,13 @@ public class ProcessListView extends ViewPart {
             return ss;
         }
 
-        class ProcessEventHandler extends EventHandler {
+        class ProcessEventHandler extends ErlangEventHandler {
 
-            @Override
-            protected void doHandleEvent(final ErlangEvent event)
-                    throws Exception {
-                if (!event.hasTopic("processlist")) {
-                    return;
-                }
+            public ProcessEventHandler(final IBackend backend) {
+                super("processlist", backend);
+            }
+
+            public void handleEvent(final Event event) {
                 Display.getDefault().asyncExec(new Runnable() {
                     public void run() {
                         if (!viewer.getControl().isDisposed()) {
@@ -133,7 +129,6 @@ public class ProcessListView extends ViewPart {
                 });
             }
         }
-
     }
 
     static class ViewLabelProvider extends LabelProvider implements
@@ -193,7 +188,7 @@ public class ProcessListView extends ViewPart {
                 new org.eclipse.swt.graphics.Point(319, 18));
         backends.setContentProvider(new BackendContentProvider());
         backends.setLabelProvider(new BackendLabelProvider());
-        backends.setInput(ErlangCore.getBackendManager());
+        backends.setInput(BackendCore.getBackendManager());
         viewer = new TableViewer(container, SWT.SINGLE | SWT.V_SCROLL
                 | SWT.FULL_SELECTION);
         final Table table = viewer.getTable();
@@ -227,14 +222,14 @@ public class ProcessListView extends ViewPart {
         t.setHeaderVisible(true);
 
         // TODO this is wrong - all backends should be inited
-        final ErlideBackend ideBackend = ErlangCore.getBackendManager()
+        final IRpcCallSite ideBackend = BackendCore.getBackendManager()
                 .getIdeBackend();
         if (ideBackend != null) {
             ErlideProclist.processListInit(ideBackend);
         }
-        ErlangCore.getBackendManager().forEachBackend(
-                new ErlideBackendVisitor() {
-                    public void visit(final ErlideBackend b) {
+        BackendCore.getBackendManager().forEachBackend(
+                new IErlideBackendVisitor() {
+                    public void visit(final IBackend b) {
                         ErlideProclist.processListInit(b);
                     }
                 });
@@ -347,14 +342,14 @@ public class ProcessListView extends ViewPart {
         viewer.getControl().setFocus();
     }
 
-    public ErlideBackend getBackend() {
+    public IBackend getBackend() {
         final IStructuredSelection sel = (IStructuredSelection) backends
                 .getSelection();
         if (sel.getFirstElement() != null) {
-            final ErlideBackend b = (ErlideBackend) sel.getFirstElement();
+            final IBackend b = (IBackend) sel.getFirstElement();
             return b;
         }
-        final ErlideBackend b = ErlangCore.getBackendManager().getIdeBackend();
+        final IBackend b = BackendCore.getBackendManager().getIdeBackend();
         if (b != null) {
             backends.setSelection(new StructuredSelection(b));
             return b;
