@@ -25,5 +25,6 @@
 		<beam_dir context="any" path="/core/utils/GsmOperateUtils"> </beam_dir>
 		<beam_dir context="any" path="/modules/nnm/ebin"> </beam_dir>
 		<beam_dir context="any" path="/sec/ebin"> </beam_dir>
+		<init function="start" module="ecc"> </init>
    </extension>
 </plugin>
