@@ -1,0 +1,8 @@
+backend_version=R15B
+eclipse.preferences.version=1
+external_includes=
+external_modules=
+include_dirs=exat/include;include;core/include
+output_dir=core/ebin
+source_dirs=exat;beamjs;auto_discovery;src/test;exago/sample_logs;exago/sample_examples;exago/splitter_type;exago/field_type;exago;src/utils;src/UI;src/siteview;src/experiment;src;erlv8;contentstore/src;core/utils/GsmOperateUtils;core/utils;core/eldap;core/src
+use_pathz=false
