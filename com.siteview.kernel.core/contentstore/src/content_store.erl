@@ -30,14 +30,12 @@
 
 start() ->
  %%  	erlide_log:log("*******************Content Store 1*************************"),
-	application:set_env(mnesia, dir, '../contentstore/db'),
-%% 	io:format("path **************  ~p~n",[application:get_env("../db")]),
- %%  	erlide_log:log("*******************Content Store 2*************************"),
+	{ok,Cwd} = file:get_cwd(),	
+	Path = Cwd ++"/contentstore/db",
+	application:set_env(mnesia, dir, list_to_atom(Path)),
     mnesia:create_schema([node()]),
-  %% 	erlide_log:log("*******************Content Store 3*************************"),
     
     mnesia:start(),
-  %% 	erlide_log:log("*******************Content Store 4*************************"),
     
     init(),
     

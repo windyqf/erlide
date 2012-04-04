@@ -2,7 +2,7 @@
 -ifndef(_MONITOR_H_).
 -define(_MONITOR_H_,1).
 
--include("../../core/include/log.hrl").
+-include("log.hrl").
 
 -define(MAX_MONITORS_SKIPS,6).
 -define(ID_SEPARATOR,"/").

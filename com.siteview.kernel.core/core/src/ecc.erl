@@ -5,7 +5,7 @@
 start() ->	
 %% 	object:start(),
 	content_store:start(),
-	application:start(quickstart_mochiweb),
+%%	application:start(quickstart_mochiweb),
 	application:start(svecc),
 	application:start(crypto),
 	application:start(ssh),
